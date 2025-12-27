@@ -145,6 +145,10 @@
                     colorConfig = theme.colors;
                     textConfig = theme.text_content;
                     
+                    console.log('Media config:', JSON.stringify(mediaConfig, null, 2));
+                    console.log('Hero media:', mediaConfig?.hero);
+                    console.log('Slide0 media:', mediaConfig?.slide0);
+                    
                     // Apply colors immediately
                     if (colorConfig) {
                         const root = document.documentElement;
@@ -183,8 +187,18 @@
             cta: textConfig?.footer?.cta || 'Get Started'
         });
         
-        // Feature data with dynamic media URLs and text
-        const features = [
+        // Default media URLs
+        const defaultMediaUrls = {
+            hero: "https://videos.pexels.com/video-files/1409899/1409899-uhd_2560_1440_25fps.mp4",
+            slide0: "https://videos.pexels.com/video-files/1918465/1918465-uhd_2560_1440_24fps.mp4",
+            slide1: "https://videos.pexels.com/video-files/2169880/2169880-uhd_2560_1440_30fps.mp4",
+            slide2: "https://videos.pexels.com/video-files/1093662/1093662-uhd_2560_1440_30fps.mp4",
+            slide3: "https://videos.pexels.com/video-files/3015510/3015510-uhd_2560_1440_24fps.mp4",
+            slide4: "https://videos.pexels.com/video-files/4763824/4763824-uhd_2560_1440_24fps.mp4"
+        };
+        
+        // Feature data - now a function to get fresh data after config loads
+        const getFeatures = () => [
             {
                 id: 0,
                 label: textConfig?.slides?.[0]?.label || "Feature 01",
@@ -193,7 +207,7 @@
                 icon: "bolt",
                 subtitle: textConfig?.slides?.[0]?.subtitle || "Zero emissions, endless adventure",
                 color: "linear-gradient(145deg, #2d3436 0%, #1a1a2e 100%)",
-                media: getMedia('slide0').url || "https://videos.pexels.com/video-files/1918465/1918465-uhd_2560_1440_24fps.mp4",
+                media: getMedia('slide0').url || defaultMediaUrls.slide0,
                 mediaType: getMedia('slide0').type,
                 overlay: "rgba(20, 30, 50, 0.5)"
             },
@@ -205,7 +219,7 @@
                 icon: "target",
                 subtitle: textConfig?.slides?.[1]?.subtitle || "Self-positioning connection",
                 color: "linear-gradient(145deg, #7d8c6e 0%, #4a5c40 100%)",
-                media: getMedia('slide1').url || "https://videos.pexels.com/video-files/2169880/2169880-uhd_2560_1440_30fps.mp4",
+                media: getMedia('slide1').url || defaultMediaUrls.slide1,
                 mediaType: getMedia('slide1').type,
                 overlay: "rgba(30, 50, 40, 0.5)"
             },
@@ -217,7 +231,7 @@
                 icon: "truck",
                 subtitle: textConfig?.slides?.[2]?.subtitle || "Dual-motor active towing",
                 color: "linear-gradient(145deg, #e85d24 0%, #b84a1c 100%)",
-                media: getMedia('slide2').url || "https://videos.pexels.com/video-files/1093662/1093662-uhd_2560_1440_30fps.mp4",
+                media: getMedia('slide2').url || defaultMediaUrls.slide2,
                 mediaType: getMedia('slide2').type,
                 overlay: "rgba(50, 80, 100, 0.45)"
             },
@@ -229,7 +243,7 @@
                 icon: "phone",
                 subtitle: textConfig?.slides?.[3]?.subtitle || "Full maneuverability via app",
                 color: "linear-gradient(145deg, #4a5568 0%, #2d3748 100%)",
-                media: getMedia('slide3').url || "https://videos.pexels.com/video-files/3015510/3015510-uhd_2560_1440_24fps.mp4",
+                media: getMedia('slide3').url || defaultMediaUrls.slide3,
                 mediaType: getMedia('slide3').type,
                 overlay: "rgba(20, 40, 60, 0.5)"
             },
@@ -241,15 +255,20 @@
                 icon: "home",
                 subtitle: textConfig?.slides?.[4]?.subtitle || "One-touch setup",
                 color: "linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%)",
-                media: getMedia('slide4').url || "https://videos.pexels.com/video-files/4763824/4763824-uhd_2560_1440_24fps.mp4",
+                media: getMedia('slide4').url || defaultMediaUrls.slide4,
                 mediaType: getMedia('slide4').type,
                 overlay: "rgba(10, 20, 30, 0.5)"
             }
         ];
         
-        const heroMedia = getMedia('hero');
-        const heroUrl = heroMedia.url || "https://videos.pexels.com/video-files/1409899/1409899-uhd_2560_1440_25fps.mp4";
-        const heroType = heroMedia.type || 'video';
+        // Hero media - now a function
+        const getHeroMedia = () => {
+            const m = getMedia('hero');
+            return {
+                url: m.url || defaultMediaUrls.hero,
+                type: m.type || 'video'
+            };
+        };
         
         // Icons component
         const Icon = ({ name, style }) => {
@@ -590,6 +609,10 @@
                 });
             }, []);
             
+            const heroMedia = getHeroMedia();
+            const heroUrl = heroMedia.url;
+            const heroType = heroMedia.type;
+            
             return (
                 <section style={{
                     height: '100vh',
@@ -679,6 +702,7 @@
         
         // Left Panel
         const LeftPanel = ({ activeIndex, onNavClick }) => {
+            const features = getFeatures();
             const [displayedFeature, setDisplayedFeature] = useState(features[0]);
             const [isAnimating, setIsAnimating] = useState(false);
             const [titleKey, setTitleKey] = useState(0);
@@ -700,7 +724,7 @@
                     stagger: 0.02,
                     ease: "power2.inOut",
                     onComplete: () => {
-                        setDisplayedFeature(features[activeIndex]);
+                        setDisplayedFeature(getFeatures()[activeIndex]);
                         setTitleKey(prev => prev + 1);
                         gsap.fromTo(elements,
                             { opacity: 0, y: 10 },
@@ -1069,20 +1093,23 @@
         };
         
         // Right Panel
-        const RightPanel = ({ onActiveChange, activeIndex, isMobile }) => (
-            <div style={{ width: isMobile ? '100%' : '62%', position: 'relative' }}>
-                {features.map((feature, index) => (
-                    <Slide 
-                        key={feature.id}
-                        feature={feature}
-                        index={index}
-                        onActive={onActiveChange}
-                        isActive={index === activeIndex}
-                        isMobile={isMobile}
-                    />
-                ))}
-            </div>
-        );
+        const RightPanel = ({ onActiveChange, activeIndex, isMobile }) => {
+            const features = getFeatures();
+            return (
+                <div style={{ width: isMobile ? '100%' : '62%', position: 'relative' }}>
+                    {features.map((feature, index) => (
+                        <Slide 
+                            key={feature.id}
+                            feature={feature}
+                            index={index}
+                            onActive={onActiveChange}
+                            isActive={index === activeIndex}
+                            isMobile={isMobile}
+                        />
+                    ))}
+                </div>
+            );
+        };
         
         // Footer
         const Footer = () => {
