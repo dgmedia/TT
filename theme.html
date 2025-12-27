@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Theme... | Pebble Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: #09090b;
+            color: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loader {
+            text-align: center;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #27272a;
+            border-top-color: #f97316;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .message { color: #71717a; }
+        .error { color: #ef4444; }
+        .buttons {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+        .btn {
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-primary { background: #f97316; color: white; }
+        .btn-primary:hover { background: #ea580c; }
+        .btn-secondary { background: #18181b; color: #fafafa; border: 1px solid #27272a; }
+        .btn-secondary:hover { background: #27272a; }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+        <p class="message" id="message">Loading theme...</p>
+        <div class="buttons" id="buttons" style="display: none;">
+            <a href="/" class="btn btn-secondary">Open Studio</a>
+            <a href="/pebble-dynamic.html" class="btn btn-primary">Preview Site</a>
+        </div>
+    </div>
+
+    <script>
+        async function loadTheme() {
+            const path = window.location.pathname;
+            const id = path.replace('/theme/', '').replace('/', '');
+            
+            if (!id) {
+                showError('No theme ID provided');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/themes/get?id=${id}`);
+                
+                if (!response.ok) {
+                    showError('Theme not found');
+                    return;
+                }
+                
+                const data = await response.json();
+                const theme = data.theme;
+                
+                // Save to localStorage
+                if (theme.media) localStorage.setItem('pebbleMedia', JSON.stringify(theme.media));
+                if (theme.colors) localStorage.setItem('pebbleColors', JSON.stringify(theme.colors));
+                if (theme.text_content) localStorage.setItem('pebbleText', JSON.stringify(theme.text_content));
+                
+                // Update UI
+                document.title = `${theme.name} | Pebble Studio`;
+                document.getElementById('message').innerHTML = `
+                    <strong style="color: #fafafa; font-size: 1.1rem;">${escapeHtml(theme.name)}</strong><br>
+                    <span style="font-size: 0.85rem;">by ${escapeHtml(theme.author || 'Anonymous')}</span>
+                `;
+                document.getElementById('buttons').style.display = 'flex';
+                document.querySelector('.spinner').style.display = 'none';
+                
+            } catch (e) {
+                console.error(e);
+                showError('Failed to load theme');
+            }
+        }
+        
+        function showError(msg) {
+            document.getElementById('message').innerHTML = `<span class="error">${msg}</span>`;
+            document.querySelector('.spinner').style.display = 'none';
+            document.getElementById('buttons').innerHTML = '<a href="/" class="btn btn-primary">Go to Studio</a>';
+            document.getElementById('buttons').style.display = 'flex';
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
+        loadTheme();
+    </script>
+</body>
+</html>

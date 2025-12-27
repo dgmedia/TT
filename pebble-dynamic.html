@@ -1,0 +1,1251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smooth Stacked Layers — Dynamic Videos</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-cream: #f5f3ef;
+            --bg-dark: #1a1a1a;
+            --text-dark: #1a1a1a;
+            --text-light: #f5f3ef;
+            --accent-orange: #e85d24;
+            --accent-sage: #7d8c6e;
+            --accent-slate: #4a5568;
+            --accent-taupe: #a39b8b;
+        }
+        
+        html {
+            scroll-behavior: auto;
+        }
+        
+        html.lenis, html.lenis body {
+            height: auto;
+        }
+        
+        .lenis.lenis-smooth {
+            scroll-behavior: auto !important;
+        }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg-cream);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+        
+        #root {
+            width: 100%;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(8px); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Dot pattern background */
+        .dot-pattern {
+            background-image: radial-gradient(circle, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- GSAP & ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    
+    <!-- Lenis Smooth Scroll -->
+    <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+        
+        // Supabase Config
+        const SUPABASE_URL = 'https://wteiewheqyrbhxjzthcg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZWlld2hlcXlyYmh4anp0aGNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MDQ3MDEsImV4cCI6MjA4MjM4MDcwMX0.-tIiLKyRzsmD4MYTahTJLXHDeeMWPPNzBAigH5UzHDA';
+        
+        // Get theme ID from URL or cookie
+        function getThemeId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlId = urlParams.get('theme');
+            if (urlId) return urlId;
+            
+            const cookie = document.cookie.split('; ').find(c => c.startsWith('pebbleThemeId='));
+            if (cookie) return cookie.split('=')[1];
+            
+            return null;
+        }
+        
+        // Load config from Supabase
+        let mediaConfig = null;
+        let colorConfig = null;
+        let textConfig = null;
+        
+        async function loadConfig() {
+            const themeId = getThemeId();
+            console.log('Loading theme:', themeId);
+            
+            if (!themeId) {
+                console.log('No theme ID, using defaults');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/themes?id=eq.${themeId}&select=*`, {
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('Loaded theme data:', data);
+                
+                if (data && data.length > 0) {
+                    const theme = data[0];
+                    mediaConfig = theme.media;
+                    colorConfig = theme.colors;
+                    textConfig = theme.text_content;
+                    
+                    // Apply colors immediately
+                    if (colorConfig) {
+                        const root = document.documentElement;
+                        if (colorConfig.bgCream) root.style.setProperty('--bg-cream', colorConfig.bgCream);
+                        if (colorConfig.bgDark) root.style.setProperty('--bg-dark', colorConfig.bgDark);
+                        if (colorConfig.accentOrange) root.style.setProperty('--accent-orange', colorConfig.accentOrange);
+                        if (colorConfig.accentSage) root.style.setProperty('--accent-sage', colorConfig.accentSage);
+                        if (colorConfig.accentSlate) root.style.setProperty('--accent-slate', colorConfig.accentSlate);
+                        if (colorConfig.accentTaupe) root.style.setProperty('--accent-taupe', colorConfig.accentTaupe);
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load config:', e);
+            }
+        }
+        
+        // Helper to get media info
+        const getMedia = (slot) => {
+            const item = mediaConfig?.[slot];
+            return {
+                url: item?.url || null,
+                type: item?.type || 'video'
+            };
+        };
+        
+        // Hero text (loaded after config)
+        const getHeroText = () => ({
+            tagline: textConfig?.hero?.tagline || 'Future Natural',
+            headline: textConfig?.hero?.headline || 'Smooth Layers',
+            subheadline: textConfig?.hero?.subheadline || 'Buttery smooth scrolling with video backgrounds'
+        });
+        
+        // Footer text (loaded after config)
+        const getFooterText = () => ({
+            tagline: textConfig?.footer?.tagline || 'The Future is Natural',
+            cta: textConfig?.footer?.cta || 'Get Started'
+        });
+        
+        // Feature data with dynamic media URLs and text
+        const features = [
+            {
+                id: 0,
+                label: textConfig?.slides?.[0]?.label || "Feature 01",
+                title: textConfig?.slides?.[0]?.title || "100% Electric",
+                desc: textConfig?.slides?.[0]?.desc || "No more fossil fuels, buzzing generators, and propane tanks. Power for days with clean, silent energy.",
+                icon: "bolt",
+                subtitle: textConfig?.slides?.[0]?.subtitle || "Zero emissions, endless adventure",
+                color: "linear-gradient(145deg, #2d3436 0%, #1a1a2e 100%)",
+                media: getMedia('slide0').url || "https://videos.pexels.com/video-files/1918465/1918465-uhd_2560_1440_24fps.mp4",
+                mediaType: getMedia('slide0').type,
+                overlay: "rgba(20, 30, 50, 0.5)"
+            },
+            {
+                id: 1,
+                label: textConfig?.slides?.[1]?.label || "Feature 02", 
+                title: textConfig?.slides?.[1]?.title || "Magic Hitch",
+                desc: textConfig?.slides?.[1]?.desc || "With one touch, sense, self-position, and safely attach to your tow vehicle. Effortless connection.",
+                icon: "target",
+                subtitle: textConfig?.slides?.[1]?.subtitle || "Self-positioning connection",
+                color: "linear-gradient(145deg, #7d8c6e 0%, #4a5c40 100%)",
+                media: getMedia('slide1').url || "https://videos.pexels.com/video-files/2169880/2169880-uhd_2560_1440_30fps.mp4",
+                mediaType: getMedia('slide1').type,
+                overlay: "rgba(30, 50, 40, 0.5)"
+            },
+            {
+                id: 2,
+                label: textConfig?.slides?.[2]?.label || "Feature 03",
+                title: textConfig?.slides?.[2]?.title || "Easy Tow",
+                desc: textConfig?.slides?.[2]?.desc || "The world's first dual-motor active towing system. Improved efficiency with unwavering confidence.",
+                icon: "truck",
+                subtitle: textConfig?.slides?.[2]?.subtitle || "Dual-motor active towing",
+                color: "linear-gradient(145deg, #e85d24 0%, #b84a1c 100%)",
+                media: getMedia('slide2').url || "https://videos.pexels.com/video-files/1093662/1093662-uhd_2560_1440_30fps.mp4",
+                mediaType: getMedia('slide2').type,
+                overlay: "rgba(50, 80, 100, 0.45)"
+            },
+            {
+                id: 3,
+                label: textConfig?.slides?.[3]?.label || "Feature 04",
+                title: textConfig?.slides?.[3]?.title || "Remote Control",
+                desc: textConfig?.slides?.[3]?.desc || "Never back up again. Fully remote-controllable positioning. Pivot effortlessly into tight spots.",
+                icon: "phone",
+                subtitle: textConfig?.slides?.[3]?.subtitle || "Full maneuverability via app",
+                color: "linear-gradient(145deg, #4a5568 0%, #2d3748 100%)",
+                media: getMedia('slide3').url || "https://videos.pexels.com/video-files/3015510/3015510-uhd_2560_1440_24fps.mp4",
+                mediaType: getMedia('slide3').type,
+                overlay: "rgba(20, 40, 60, 0.5)"
+            },
+            {
+                id: 4,
+                label: textConfig?.slides?.[4]?.label || "Feature 05",
+                title: textConfig?.slides?.[4]?.title || "InstaCamp",
+                desc: textConfig?.slides?.[4]?.desc || "Be camp-ready in seconds. One touch sets up leveling, stairs, thermostat, and lights automatically.",
+                icon: "home",
+                subtitle: textConfig?.slides?.[4]?.subtitle || "One-touch setup",
+                color: "linear-gradient(145deg, #1a1a1a 0%, #0d0d0d 100%)",
+                media: getMedia('slide4').url || "https://videos.pexels.com/video-files/4763824/4763824-uhd_2560_1440_24fps.mp4",
+                mediaType: getMedia('slide4').type,
+                overlay: "rgba(10, 20, 30, 0.5)"
+            }
+        ];
+        
+        const heroMedia = getMedia('hero');
+        const heroUrl = heroMedia.url || "https://videos.pexels.com/video-files/1409899/1409899-uhd_2560_1440_25fps.mp4";
+        const heroType = heroMedia.type || 'video';
+        
+        // Icons component
+        const Icon = ({ name, style }) => {
+            const icons = {
+                bolt: <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>,
+                target: <><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></>,
+                truck: <><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v4h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></>,
+                phone: <><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="18" r="1"/></>,
+                home: <><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>,
+                logo: <><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></>,
+                menu: <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
+                arrow: <path d="M5 12h14M12 5l7 7-7 7"/>
+            };
+            return (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={style}>
+                    {icons[name]}
+                </svg>
+            );
+        };
+        
+        // Logo Component
+        const Logo = () => (
+            <div style={{
+                width: '48px',
+                height: '48px',
+                background: 'var(--accent-taupe)',
+                borderRadius: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+            }}>
+                <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '24px', height: '24px' }}>
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
+        );
+        
+        // Header Component
+        const Header = () => {
+            const [scrolled, setScrolled] = useState(false);
+            
+            useEffect(() => {
+                const handleScroll = () => {
+                    setScrolled(window.scrollY > 100);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+            
+            return (
+                <header style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    padding: '1.25rem 2rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    zIndex: 1000,
+                    transition: 'all 0.3s ease',
+                }}>
+                    <Logo />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <a href="/" style={{
+                            height: '48px',
+                            padding: '0 1.25rem',
+                            background: scrolled ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.9)',
+                            backdropFilter: 'blur(10px)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            color: 'var(--accent-orange)',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            transition: 'all 0.3s ease',
+                        }}>
+                            <span>⚙️</span> Dashboard
+                        </a>
+                        <button style={{
+                            width: '48px',
+                            height: '48px',
+                            background: scrolled ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.9)',
+                            backdropFilter: 'blur(10px)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.3s ease',
+                        }}>
+                            <Icon name="menu" style={{ width: '20px', height: '20px', color: 'var(--text-dark)' }} />
+                        </button>
+                        <button style={{
+                            height: '48px',
+                            padding: '0 1.5rem',
+                            background: scrolled ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.9)',
+                            backdropFilter: 'blur(10px)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontSize: '0.8rem',
+                            fontWeight: 500,
+                            letterSpacing: '0.05em',
+                            textTransform: 'uppercase',
+                            color: 'var(--text-dark)',
+                            transition: 'all 0.3s ease',
+                        }}>
+                            Build
+                        </button>
+                    </div>
+                </header>
+            );
+        };
+        
+        // Floating Badge Component
+        const FloatingBadge = ({ text = "KEEP GOING", isVisible }) => {
+            const badgeRef = useRef(null);
+            
+            useEffect(() => {
+                if (badgeRef.current) {
+                    gsap.to(badgeRef.current, {
+                        rotation: 360,
+                        duration: 20,
+                        repeat: -1,
+                        ease: "none"
+                    });
+                }
+            }, []);
+            
+            return (
+                <div style={{
+                    position: 'fixed',
+                    right: '5%',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    zIndex: 50,
+                    opacity: isVisible ? 1 : 0,
+                    transition: 'opacity 0.5s ease',
+                    pointerEvents: 'none',
+                }}>
+                    <div style={{
+                        width: '90px',
+                        height: '90px',
+                        background: 'var(--accent-orange)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
+                        animation: 'pulse 3s ease-in-out infinite',
+                    }}>
+                        <svg ref={badgeRef} viewBox="0 0 100 100" style={{ 
+                            position: 'absolute', 
+                            width: '100%', 
+                            height: '100%',
+                        }}>
+                            <defs>
+                                <path id="circlePath" d="M 50,50 m -35,0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0"/>
+                            </defs>
+                            <text fill="white" fontSize="11" fontWeight="500" letterSpacing="3">
+                                <textPath href="#circlePath">
+                                    {text} • {text} • 
+                                </textPath>
+                            </text>
+                        </svg>
+                        <Icon name="arrow" style={{ width: '24px', height: '24px', color: 'white', transform: 'rotate(-45deg)' }} />
+                    </div>
+                </div>
+            );
+        };
+        
+        // Divider with Cross
+        const Divider = () => (
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0',
+                margin: '2rem 0',
+                width: '100%',
+                maxWidth: '300px',
+            }}>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.1)' }} />
+                <div style={{
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'rgba(0,0,0,0.2)',
+                    fontSize: '1rem',
+                    fontWeight: 300,
+                }}>+</div>
+                <div style={{ flex: 1, height: '1px', background: 'rgba(0,0,0,0.1)' }} />
+            </div>
+        );
+        
+        // Animated Text Component (character by character)
+        const AnimatedText = ({ text, isAnimating, style }) => {
+            const containerRef = useRef(null);
+            
+            useEffect(() => {
+                if (containerRef.current && isAnimating) {
+                    const chars = containerRef.current.querySelectorAll('.char');
+                    gsap.fromTo(chars,
+                        { opacity: 0, y: 40, rotateX: -90 },
+                        {
+                            opacity: 1,
+                            y: 0,
+                            rotateX: 0,
+                            duration: 0.6,
+                            stagger: 0.03,
+                            ease: "back.out(1.7)"
+                        }
+                    );
+                }
+            }, [text, isAnimating]);
+            
+            return (
+                <div ref={containerRef} style={{ ...style, perspective: '1000px' }}>
+                    {text.split('').map((char, i) => (
+                        <span 
+                            key={i} 
+                            className="char"
+                            style={{ 
+                                display: 'inline-block',
+                                whiteSpace: char === ' ' ? 'pre' : 'normal',
+                            }}
+                        >
+                            {char}
+                        </span>
+                    ))}
+                </div>
+            );
+        };
+        
+        // Custom hooks
+        const useSmoothScroll = () => {
+            useEffect(() => {
+                const isMobile = window.innerWidth <= 968;
+                
+                const lenis = new Lenis({
+                    duration: isMobile ? 1.2 : 1.5,
+                    easing: (t) => 1 - Math.pow(1 - t, 3),
+                    direction: 'vertical',
+                    gestureDirection: 'vertical',
+                    smooth: true,
+                    smoothTouch: true,
+                    touchMultiplier: isMobile ? 1.8 : 1.5,
+                    wheelMultiplier: isMobile ? 1 : 0.9,
+                });
+                
+                lenis.on('scroll', ScrollTrigger.update);
+                gsap.ticker.add((time) => lenis.raf(time * 1000));
+                gsap.ticker.lagSmoothing(0);
+                
+                const handleResize = () => ScrollTrigger.refresh();
+                window.addEventListener('resize', handleResize);
+                
+                return () => {
+                    window.removeEventListener('resize', handleResize);
+                    lenis.destroy();
+                };
+            }, []);
+        };
+        
+        const useIsMobile = () => {
+            const [isMobile, setIsMobile] = useState(window.innerWidth <= 968);
+            
+            useEffect(() => {
+                const checkMobile = () => setIsMobile(window.innerWidth <= 968);
+                window.addEventListener('resize', checkMobile);
+                return () => window.removeEventListener('resize', checkMobile);
+            }, []);
+            
+            return isMobile;
+        };
+        
+        // Progress Bar
+        const ProgressBar = () => {
+            const progressRef = useRef(null);
+            
+            useEffect(() => {
+                gsap.to(progressRef.current, {
+                    width: "100%",
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: document.body,
+                        start: "top top",
+                        end: "bottom bottom",
+                        scrub: 0.3
+                    }
+                });
+            }, []);
+            
+            return (
+                <div 
+                    ref={progressRef} 
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        height: '3px',
+                        background: 'var(--accent-orange)',
+                        width: '0%',
+                        zIndex: 1001,
+                    }} 
+                />
+            );
+        };
+        
+        // Hero Section
+        const Hero = () => {
+            const contentRef = useRef(null);
+            
+            useEffect(() => {
+                gsap.to(contentRef.current, {
+                    opacity: 0,
+                    y: -100,
+                    scale: 0.95,
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: contentRef.current.parentElement,
+                        start: "top top",
+                        end: "bottom top",
+                        scrub: 1
+                    }
+                });
+            }, []);
+            
+            return (
+                <section style={{
+                    height: '100vh',
+                    minHeight: '600px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'var(--bg-dark)',
+                    color: 'var(--text-light)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    padding: '0 1.5rem',
+                }}>
+                    {heroType === 'video' ? (
+                    <video style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        minWidth: '100%',
+                        minHeight: '100%',
+                        width: 'auto',
+                        height: 'auto',
+                        transform: 'translate(-50%, -50%)',
+                        objectFit: 'cover',
+                    }} autoPlay muted loop playsInline>
+                        <source src={heroUrl} type="video/mp4" />
+                    </video>
+                    ) : (
+                    <img src={heroUrl} alt="Hero background" style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        minWidth: '100%',
+                        minHeight: '100%',
+                        width: 'auto',
+                        height: 'auto',
+                        transform: 'translate(-50%, -50%)',
+                        objectFit: 'cover',
+                    }} />
+                    )}
+                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0, 0, 0, 0.4)' }} />
+                    <div ref={contentRef} style={{ textAlign: 'center', zIndex: 1, position: 'relative', maxWidth: '900px' }}>
+                        <p style={{ 
+                            fontSize: '0.8rem', 
+                            textTransform: 'uppercase', 
+                            letterSpacing: '0.3em', 
+                            marginBottom: '1.5rem',
+                            opacity: 0.7,
+                        }}>
+                            {getHeroText().tagline}
+                        </p>
+                        <h1 style={{
+                            fontFamily: "'Instrument Serif', serif",
+                            fontSize: 'clamp(2.5rem, 8vw, 7rem)',
+                            fontWeight: 400,
+                            letterSpacing: '-0.02em',
+                            marginBottom: '1.5rem',
+                            lineHeight: 1.1,
+                        }}>
+                            {getHeroText().headline}
+                        </h1>
+                        <p style={{ fontSize: 'clamp(0.875rem, 2vw, 1.125rem)', opacity: 0.8, fontWeight: 300 }}>
+                            {getHeroText().subheadline}
+                        </p>
+                    </div>
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '2rem',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        opacity: 0.6,
+                        animation: 'bounce 2s infinite',
+                        zIndex: 1,
+                    }}>
+                        <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Scroll</span>
+                        <svg style={{ width: '20px', height: '20px' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                    </div>
+                </section>
+            );
+        };
+        
+        // Left Panel
+        const LeftPanel = ({ activeIndex, onNavClick }) => {
+            const [displayedFeature, setDisplayedFeature] = useState(features[0]);
+            const [isAnimating, setIsAnimating] = useState(false);
+            const [titleKey, setTitleKey] = useState(0);
+            const [isHovered, setIsHovered] = useState(false);
+            const labelRef = useRef(null);
+            const descRef = useRef(null);
+            const isMobile = useIsMobile();
+            
+            useEffect(() => {
+                if (activeIndex === displayedFeature.id || isAnimating) return;
+                
+                setIsAnimating(true);
+                const elements = [labelRef.current, descRef.current];
+                
+                gsap.to(elements, {
+                    opacity: 0,
+                    y: -10,
+                    duration: 0.2,
+                    stagger: 0.02,
+                    ease: "power2.inOut",
+                    onComplete: () => {
+                        setDisplayedFeature(features[activeIndex]);
+                        setTitleKey(prev => prev + 1);
+                        gsap.fromTo(elements,
+                            { opacity: 0, y: 10 },
+                            {
+                                opacity: 1,
+                                y: 0,
+                                duration: 0.3,
+                                stagger: 0.03,
+                                ease: "power2.out",
+                                delay: 0.3,
+                                onComplete: () => setIsAnimating(false)
+                            }
+                        );
+                    }
+                });
+            }, [activeIndex, displayedFeature.id, isAnimating]);
+            
+            return (
+                <div className="dot-pattern" style={{
+                    width: isMobile ? '100%' : '38%',
+                    height: isMobile ? 'auto' : '100vh',
+                    minHeight: isMobile ? '60vh' : undefined,
+                    position: isMobile ? 'relative' : 'sticky',
+                    top: 0,
+                    background: 'var(--bg-cream)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    padding: isMobile ? '4rem 1.5rem 3rem' : '4rem',
+                    zIndex: 100,
+                    borderRight: isMobile ? 'none' : '1px solid rgba(0,0,0,0.06)',
+                    borderBottom: isMobile ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                    borderRadius: isMobile ? '0' : '0 24px 24px 0',
+                }}>
+                    <div ref={labelRef} style={{
+                        fontSize: '0.7rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.2em',
+                        color: 'var(--accent-orange)',
+                        marginBottom: '1.5rem',
+                        fontWeight: 500,
+                    }}>
+                        {displayedFeature.label}
+                    </div>
+                    
+                    <AnimatedText 
+                        key={titleKey}
+                        text={displayedFeature.title}
+                        isAnimating={true}
+                        style={{
+                            fontFamily: "'Instrument Serif', serif",
+                            fontSize: isMobile ? 'clamp(2rem, 8vw, 3rem)' : 'clamp(2.5rem, 4vw, 3.5rem)',
+                            fontWeight: 400,
+                            lineHeight: 1.1,
+                            marginBottom: '0.5rem',
+                            letterSpacing: '-0.02em',
+                        }}
+                    />
+                    
+                    <Divider />
+                    
+                    <p ref={descRef} style={{
+                        fontSize: isMobile ? '0.95rem' : '1rem',
+                        lineHeight: 1.8,
+                        color: 'var(--accent-slate)',
+                        maxWidth: '360px',
+                        fontWeight: 300,
+                    }}>
+                        {displayedFeature.desc}
+                    </p>
+                    
+                    {/* Numbered Navigation */}
+                    <nav style={{
+                        marginTop: isMobile ? '2rem' : '2.5rem',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem 1.5rem',
+                        borderTop: '1px solid rgba(0,0,0,0.08)',
+                        paddingTop: '1.5rem',
+                    }}>
+                        {features.map((f, i) => (
+                            <button 
+                                key={f.id}
+                                onClick={() => onNavClick && onNavClick(i)}
+                                style={{
+                                    padding: '0.25rem 0',
+                                    fontSize: '0.7rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.05em',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    color: i === activeIndex ? 'var(--text-dark)' : 'var(--accent-taupe)',
+                                    fontFamily: 'inherit',
+                                    fontWeight: i === activeIndex ? 500 : 400,
+                                    transition: 'all 0.3s ease',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {i + 1}.{f.title.toUpperCase().replace(' ', ' ')}
+                            </button>
+                        ))}
+                    </nav>
+                    
+                    {/* CTA Button */}
+                    <button 
+                        style={{
+                            marginTop: isMobile ? '1.5rem' : '2rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '100%',
+                            maxWidth: '320px',
+                            gap: '0.75rem',
+                            padding: '1.25rem 2rem',
+                            background: isHovered ? 'var(--accent-slate)' : 'rgba(0,0,0,0.04)',
+                            color: isHovered ? 'white' : 'var(--text-dark)',
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.15em',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            fontWeight: 500,
+                            transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                            position: 'relative',
+                            overflow: 'hidden',
+                        }}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
+                    >
+                        <span>Explore the Flow</span>
+                        <svg style={{ 
+                            width: '16px', 
+                            height: '16px',
+                            transition: 'transform 0.3s ease',
+                            transform: isHovered ? 'translateX(4px)' : 'translateX(0)',
+                        }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    
+                    {/* Corner decorations */}
+                    <div style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        left: '1.5rem',
+                        width: '8px',
+                        height: '8px',
+                        borderLeft: '1px solid rgba(0,0,0,0.1)',
+                        borderTop: '1px solid rgba(0,0,0,0.1)',
+                    }} />
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '1.5rem',
+                        right: '1.5rem',
+                        width: '8px',
+                        height: '8px',
+                        borderRight: '1px solid rgba(0,0,0,0.1)',
+                        borderBottom: '1px solid rgba(0,0,0,0.1)',
+                    }} />
+                </div>
+            );
+        };
+        
+        // Slide Component
+        const Slide = ({ feature, index, onActive, isActive, isMobile }) => {
+            const slideRef = useRef(null);
+            const bgRef = useRef(null);
+            const contentRef = useRef(null);
+            const videoRef = useRef(null);
+            const iconRef = useRef(null);
+            
+            useEffect(() => {
+                const slide = slideRef.current;
+                const bg = bgRef.current;
+                const content = contentRef.current;
+                const iconEl = iconRef.current;
+                
+                if (index > 0) {
+                    gsap.fromTo(bg,
+                        { yPercent: 100 },
+                        {
+                            yPercent: 0,
+                            ease: "none",
+                            scrollTrigger: {
+                                trigger: slide,
+                                start: "top bottom",
+                                end: "top top",
+                                scrub: isMobile ? 0.6 : 0.8,
+                            }
+                        }
+                    );
+                }
+                
+                gsap.fromTo(iconEl,
+                    { scale: 0.8, opacity: 0 },
+                    {
+                        scale: 1,
+                        opacity: 1,
+                        duration: 0.6,
+                        ease: "back.out(1.7)",
+                        scrollTrigger: {
+                            trigger: slide,
+                            start: "top 60%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+                
+                gsap.fromTo(content,
+                    { yPercent: isMobile ? 10 : 15 },
+                    {
+                        yPercent: isMobile ? -10 : -15,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: slide,
+                            start: "top bottom",
+                            end: "bottom top",
+                            scrub: 0.8,
+                        }
+                    }
+                );
+                
+                ScrollTrigger.create({
+                    trigger: slide,
+                    start: "top 55%",
+                    end: "bottom 45%",
+                    onEnter: () => onActive(index),
+                    onEnterBack: () => onActive(index),
+                });
+                
+                return () => {
+                    ScrollTrigger.getAll().forEach(t => {
+                        if (t.trigger === slide) t.kill();
+                    });
+                };
+            }, [index, onActive, isMobile]);
+            
+            useEffect(() => {
+                if (videoRef.current && isActive) {
+                    videoRef.current.play().catch(() => {});
+                }
+            }, [isActive]);
+            
+            return (
+                <div ref={slideRef} data-slide-index={index} style={{
+                    height: isMobile ? '70vh' : '100vh',
+                    minHeight: isMobile ? '500px' : undefined,
+                    width: '100%',
+                    position: 'sticky',
+                    top: 0,
+                    overflow: 'hidden',
+                    zIndex: index + 1,
+                }}>
+                    <div ref={bgRef} style={{
+                        position: 'absolute',
+                        inset: 0,
+                        willChange: 'transform',
+                        overflow: 'hidden',
+                        background: feature.color,
+                        transform: index === 0 ? 'translateY(0)' : undefined,
+                    }}>
+                        {feature.mediaType === 'image' ? (
+                        <img src={feature.media} alt={feature.title} style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            minWidth: '100%',
+                            minHeight: '100%',
+                            width: 'auto',
+                            height: 'auto',
+                            transform: 'translate(-50%, -50%)',
+                            objectFit: 'cover',
+                        }} />
+                        ) : (
+                        <video ref={videoRef} style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            minWidth: '100%',
+                            minHeight: '100%',
+                            width: 'auto',
+                            height: 'auto',
+                            transform: 'translate(-50%, -50%)',
+                            objectFit: 'cover',
+                        }} autoPlay muted loop playsInline>
+                            <source src={feature.media} type="video/mp4" />
+                        </video>
+                        )}
+                        <div style={{ position: 'absolute', inset: 0, background: feature.overlay, zIndex: 1 }} />
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            height: isMobile ? '100px' : '150px',
+                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 100%)',
+                            zIndex: 2,
+                            pointerEvents: 'none',
+                        }} />
+                        <div style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.3) 100%)',
+                            zIndex: 2,
+                        }} />
+                    </div>
+                    <div ref={contentRef} style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 10,
+                        textAlign: 'center',
+                        color: 'var(--text-light)',
+                        padding: isMobile ? '1.5rem' : '2rem',
+                    }}>
+                        <div ref={iconRef} style={{
+                            width: isMobile ? '70px' : '100px',
+                            height: isMobile ? '70px' : '100px',
+                            marginBottom: isMobile ? '1.5rem' : '2rem',
+                            background: 'rgba(255,255,255,0.1)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                        }}>
+                            <Icon name={feature.icon} style={{ width: isMobile ? '32px' : '48px', height: isMobile ? '32px' : '48px' }} />
+                        </div>
+                        <h3 style={{
+                            fontFamily: "'Instrument Serif', serif",
+                            fontSize: isMobile ? '1.75rem' : '2.5rem',
+                            marginBottom: '0.5rem',
+                            fontWeight: 400,
+                            textShadow: '0 2px 20px rgba(0,0,0,0.3)',
+                        }}>{feature.title}</h3>
+                        <p style={{
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            opacity: 0.8,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.15em',
+                            textShadow: '0 1px 10px rgba(0,0,0,0.3)',
+                        }}>{feature.subtitle}</p>
+                    </div>
+                    <span style={{
+                        fontFamily: "'Instrument Serif', serif",
+                        fontSize: isMobile ? '6rem' : '12rem',
+                        position: 'absolute',
+                        bottom: isMobile ? '-0.5rem' : '-1.5rem',
+                        right: isMobile ? '1rem' : '2rem',
+                        opacity: 0.06,
+                        fontWeight: 400,
+                        pointerEvents: 'none',
+                        lineHeight: 1,
+                        zIndex: 5,
+                        color: 'white',
+                    }}>0{index + 1}</span>
+                </div>
+            );
+        };
+        
+        // Right Panel
+        const RightPanel = ({ onActiveChange, activeIndex, isMobile }) => (
+            <div style={{ width: isMobile ? '100%' : '62%', position: 'relative' }}>
+                {features.map((feature, index) => (
+                    <Slide 
+                        key={feature.id}
+                        feature={feature}
+                        index={index}
+                        onActive={onActiveChange}
+                        isActive={index === activeIndex}
+                        isMobile={isMobile}
+                    />
+                ))}
+            </div>
+        );
+        
+        // Footer
+        const Footer = () => {
+            const footerRef = useRef(null);
+            
+            useEffect(() => {
+                gsap.from(footerRef.current, {
+                    opacity: 0,
+                    y: 60,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: footerRef.current.parentElement,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+            }, []);
+            
+            return (
+                <section className="dot-pattern" style={{
+                    height: '100vh',
+                    minHeight: '400px',
+                    background: 'var(--bg-cream)',
+                    color: 'var(--text-dark)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    position: 'relative',
+                    zIndex: 10,
+                    padding: '2rem',
+                }}>
+                    <div ref={footerRef}>
+                        <p style={{
+                            fontSize: '0.75rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.3em',
+                            marginBottom: '1.5rem',
+                            color: 'var(--accent-taupe)',
+                        }}>
+                            {getFooterText().tagline}
+                        </p>
+                        <h2 style={{
+                            fontFamily: "'Instrument Serif', serif",
+                            fontSize: 'clamp(1.75rem, 6vw, 5rem)',
+                            fontWeight: 400,
+                            maxWidth: '800px',
+                            lineHeight: 1.2,
+                            marginBottom: '2rem',
+                        }}>
+                            Ready to <span style={{ color: 'var(--accent-orange)', fontStyle: 'italic' }}>begin</span>?
+                        </h2>
+                        <button style={{
+                            padding: '1rem 2.5rem',
+                            fontSize: '0.9rem',
+                            fontWeight: 500,
+                            background: 'var(--accent-orange)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '50px',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s, box-shadow 0.2s',
+                        }}
+                        onMouseOver={(e) => { e.target.style.transform = 'scale(1.05)'; e.target.style.boxShadow = '0 10px 30px rgba(0,0,0,0.2)'; }}
+                        onMouseOut={(e) => { e.target.style.transform = 'scale(1)'; e.target.style.boxShadow = 'none'; }}
+                        >
+                            {getFooterText().cta}
+                        </button>
+                    </div>
+                </section>
+            );
+        };
+        
+        // Main App
+        const App = () => {
+            const [loading, setLoading] = useState(true);
+            const [activeIndex, setActiveIndex] = useState(0);
+            const [showBadge, setShowBadge] = useState(false);
+            const [config, setConfig] = useState({ media: null, colors: null, text: null });
+            const isMobile = useIsMobile();
+            
+            useSmoothScroll();
+            
+            // Load config from Supabase on mount
+            useEffect(() => {
+                async function load() {
+                    await loadConfig();
+                    setConfig({ media: mediaConfig, colors: colorConfig, text: textConfig });
+                    setLoading(false);
+                }
+                load();
+            }, []);
+            
+            useEffect(() => {
+                const handleScroll = () => {
+                    const scrollY = window.scrollY;
+                    const windowHeight = window.innerHeight;
+                    setShowBadge(scrollY > windowHeight * 0.5 && scrollY < document.body.scrollHeight - windowHeight * 1.5);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+            
+            const handleActiveChange = useCallback((index) => {
+                setActiveIndex(index);
+            }, []);
+            
+            const handleNavClick = useCallback((index) => {
+                const slideEl = document.querySelector(`[data-slide-index="${index}"]`);
+                if (slideEl) {
+                    slideEl.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, []);
+            
+            if (loading) {
+                return (
+                    <div style={{ 
+                        height: '100vh', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        background: 'var(--bg-dark)',
+                        color: 'white'
+                    }}>
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ 
+                                width: '40px', 
+                                height: '40px', 
+                                border: '3px solid rgba(255,255,255,0.2)',
+                                borderTopColor: 'var(--accent-orange)',
+                                borderRadius: '50%',
+                                animation: 'spin 1s linear infinite',
+                                margin: '0 auto 1rem'
+                            }} />
+                            <p>Loading...</p>
+                        </div>
+                        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                    </div>
+                );
+            }
+            
+            return (
+                <>
+                    <Header />
+                    <ProgressBar />
+                    <Hero />
+                    {!isMobile && <FloatingBadge text="KEEP GOING " isVisible={showBadge} />}
+                    <section style={{
+                        display: 'flex',
+                        flexDirection: isMobile ? 'column' : 'row',
+                        position: 'relative',
+                    }}>
+                        <LeftPanel activeIndex={activeIndex} onNavClick={handleNavClick} />
+                        <RightPanel onActiveChange={handleActiveChange} activeIndex={activeIndex} isMobile={isMobile} />
+                    </section>
+                    <Footer />
+                </>
+            );
+        };
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

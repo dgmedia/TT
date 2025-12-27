@@ -1,0 +1,2447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pebble Studio v5.0</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg: #09090b;
+            --bg-elevated: #18181b;
+            --bg-hover: #27272a;
+            --border: #27272a;
+            --text: #fafafa;
+            --text-muted: #71717a;
+            --accent: #f97316;
+            --accent-hover: #ea580c;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+        
+        body {
+            font-family: 'DM Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+        
+        .app {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            min-height: 100vh;
+        }
+        
+        @media (max-width: 900px) {
+            .app { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.75rem;
+        }
+        
+        .logo-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--accent);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-text { font-weight: 600; font-size: 1rem; }
+        
+        .nav { flex: 1; }
+        .nav-section { margin-bottom: 1.25rem; }
+        
+        .nav-label {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+            padding-left: 0.6rem;
+        }
+        
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.5rem 0.6rem;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-family: inherit;
+        }
+        
+        .nav-item:hover { background: var(--bg-hover); color: var(--text); }
+        .nav-item.active { background: var(--bg-elevated); color: var(--text); }
+        
+        .sidebar-footer {
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        /* Main */
+        .main { padding: 1.25rem 1.75rem; overflow-y: auto; }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+        
+        .header h1 { font-size: 1.35rem; font-weight: 600; }
+        .header-actions { display: flex; gap: 0.6rem; }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.9rem;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+            font-family: inherit;
+            text-decoration: none;
+        }
+        
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary { background: var(--bg-elevated); color: var(--text); border-color: var(--border); }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-ghost { background: transparent; color: var(--text-muted); }
+        .btn-ghost:hover { background: var(--bg-hover); color: var(--text); }
+        
+        /* Cards */
+        .card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.1rem;
+            margin-bottom: 0.9rem;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.9rem;
+        }
+        
+        .card-title { font-weight: 500; font-size: 0.9rem; }
+        
+        /* Panels */
+        .panel { display: none; }
+        .panel.active { display: block; }
+        
+        /* Search */
+        .search-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.85rem;
+            margin-bottom: 0.85rem;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.4rem 0;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        
+        .search-input:focus { outline: none; }
+        .search-input::placeholder { color: var(--text-muted); }
+        
+        .search-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.65rem;
+            padding-top: 0.65rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .search-hint { font-size: 0.7rem; color: var(--text-muted); }
+        
+        /* Chips */
+        .chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        
+        .chip {
+            padding: 0.3rem 0.65rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: var(--text-muted);
+            font-family: inherit;
+        }
+        
+        .chip:hover { border-color: var(--accent); color: var(--text); }
+        
+        /* Slots */
+        .slots { display: flex; gap: 0.3rem; margin-bottom: 0.85rem; flex-wrap: wrap; }
+        
+        .slot {
+            padding: 0.3rem 0.65rem;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-muted);
+            font-family: inherit;
+        }
+        
+        .slot:hover { border-color: var(--text-muted); }
+        .slot.active { background: var(--accent); border-color: var(--accent); color: white; }
+        
+        /* Media Grid */
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.6rem;
+        }
+        
+        .media-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .media-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        
+        .media-thumb {
+            aspect-ratio: 16/9;
+            background: #000;
+            position: relative;
+        }
+        
+        .media-thumb video,
+        .media-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .media-meta { padding: 0.5rem 0.6rem; }
+        
+        .media-label {
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent);
+        }
+        
+        .media-title {
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.45rem;
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+        
+        .result-card {
+            position: relative;
+            border-radius: 6px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        
+        .result-card:hover { transform: scale(1.03); }
+        
+        .result-card img {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            display: block;
+        }
+        
+        /* Color Grid */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.6rem;
+        }
+        
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+        }
+        
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 7px;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .color-info { flex: 1; }
+        .color-name { font-size: 0.65rem; color: var(--text-muted); }
+        .color-value { font-size: 0.75rem; font-family: monospace; }
+        
+        /* Quick Grid */
+        .quick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.4rem;
+        }
+        
+        .quick-btn {
+            padding: 0.6rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            color: var(--text);
+            text-align: center;
+        }
+        
+        .quick-btn:hover { border-color: var(--accent); background: var(--bg-hover); }
+        
+        .quick-btn-icon { font-size: 1.1rem; margin-bottom: 0.2rem; }
+        .quick-btn-label { font-size: 0.65rem; color: var(--text-muted); }
+        
+        /* Text Input Fields */
+        .form-group {
+            margin-bottom: 0.85rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.85rem;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .form-input::placeholder { color: var(--text-muted); }
+        
+        .form-textarea {
+            min-height: 60px;
+            resize: vertical;
+        }
+        
+        /* Section Accordion */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 0;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0.75rem;
+        }
+        
+        .section-header:hover { color: var(--accent); }
+        
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .section-toggle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+        
+        .section-content {
+            display: none;
+            padding-bottom: 0.5rem;
+        }
+        
+        .section-content.open { display: block; }
+        
+        .section-toggle.open { transform: rotate(180deg); }
+        
+        /* Upload Zone */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.85rem;
+        }
+        
+        .upload-zone:hover { border-color: var(--accent); background: var(--bg-hover); }
+        .upload-zone.dragover { border-color: var(--accent); background: rgba(249, 115, 22, 0.1); }
+        
+        .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .upload-text { font-size: 0.85rem; color: var(--text-muted); }
+        .upload-hint { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
+        
+        /* Prompt Box */
+        .prompt-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.85rem;
+            margin-bottom: 0.85rem;
+        }
+        
+        .prompt-textarea {
+            width: 100%;
+            min-height: 70px;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: none;
+            line-height: 1.5;
+        }
+        
+        .prompt-textarea:focus { outline: none; }
+        .prompt-textarea::placeholder { color: var(--text-muted); }
+        
+        /* Tabs within card */
+        .card-tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 0.85rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+        
+        .card-tab {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.75rem;
+            border: none;
+            background: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        
+        .card-tab:hover { color: var(--text); }
+        .card-tab.active { background: var(--bg-hover); color: var(--text); }
+        
+        /* Status */
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+        
+        .status-dot.loading { background: var(--accent); animation: pulse 1s infinite; }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1.25rem;
+            right: 1.25rem;
+            padding: 0.75rem 1.1rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+        
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--error); }
+        
+        /* Hidden file input */
+        .hidden { display: none; }
+        
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .modal {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 420px;
+            transform: scale(0.95);
+            transition: transform 0.2s;
+        }
+        
+        .modal-overlay.open .modal {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .modal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .modal-close:hover { color: var(--text); }
+        
+        /* Theme Cards for Gallery */
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+        }
+        
+        .theme-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .theme-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        
+        .theme-preview {
+            height: 80px;
+            display: flex;
+            position: relative;
+        }
+        
+        .theme-preview-swatch {
+            flex: 1;
+        }
+        
+        .theme-info {
+            padding: 0.6rem 0.75rem;
+        }
+        
+        .theme-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+        
+        .theme-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        
+        .theme-stats {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        /* Share URL Box */
+        .share-box {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .share-input {
+            flex: 1;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        
+        /* Gallery Sort Tabs */
+        .sort-tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .sort-tab {
+            padding: 0.4rem 0.75rem;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        
+        .sort-tab:hover { border-color: var(--text-muted); }
+        .sort-tab.active { 
+            background: var(--accent); 
+            border-color: var(--accent);
+            color: white;
+        }
+        
+        /* Checkbox */
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-top: 0.75rem;
+        }
+        
+        .checkbox-label input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        
+        /* Type indicator */
+        .type-badge {
+            position: absolute;
+            top: 0.4rem;
+            right: 0.4rem;
+            padding: 0.15rem 0.4rem;
+            background: rgba(0,0,0,0.7);
+            border-radius: 4px;
+            font-size: 0.6rem;
+            color: white;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <span class="logo-text">Pebble Studio</span>
+            </div>
+            
+            <nav class="nav">
+                <div class="nav-section">
+                    <div class="nav-label">Backgrounds</div>
+                    <button class="nav-item active" onclick="showPanel('videos')">🎬 Videos</button>
+                    <button class="nav-item" onclick="showPanel('images')">🖼️ Images</button>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-label">Styling</div>
+                    <button class="nav-item" onclick="showPanel('colors')">🎨 Colors</button>
+                    <button class="nav-item" onclick="showPanel('content')">✏️ Content</button>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-label">Community</div>
+                    <button class="nav-item" onclick="showPanel('gallery')">🌐 Theme Gallery</button>
+                    <button class="nav-item" onclick="openSaveModal()">💾 Save to Cloud</button>
+                    <button class="nav-item" onclick="openLoadModal()">📂 Load Theme</button>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-label">Quick Themes</div>
+                    <button class="nav-item" onclick="applyTheme('ocean')">🌊 Ocean</button>
+                    <button class="nav-item" onclick="applyTheme('mountain')">🏔️ Mountain</button>
+                    <button class="nav-item" onclick="applyTheme('forest')">🌲 Forest</button>
+                    <button class="nav-item" onclick="applyTheme('sunset')">🌅 Sunset</button>
+                    <button class="nav-item" onclick="applyTheme('night')">🌃 Night</button>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Ready</span>
+                </div>
+            </div>
+        </aside>
+        
+        <main class="main">
+            <div class="header">
+                <h1 id="panelTitle">Videos</h1>
+                <div class="header-actions">
+                    <button class="btn btn-ghost" onclick="openShareModal()" title="Share">🔗</button>
+                    <a href="#" onclick="openPreview(); return false;" class="btn btn-secondary">Preview →</a>
+                    <button class="btn btn-primary" onclick="exportConfig()">Export</button>
+                </div>
+            </div>
+            
+            <!-- Videos Panel -->
+            <div id="panel-videos" class="panel active">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🔍 Search Videos</span>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" class="search-input" id="videoSearch" placeholder="Search Pexels for videos...">
+                        <div class="search-footer">
+                            <span class="search-hint">Press Enter to search</span>
+                            <button class="btn btn-primary" onclick="searchVideos()">Search</button>
+                        </div>
+                    </div>
+                    <div class="chips">
+                        <button class="chip" onclick="quickVideoSearch('ocean waves')">🌊 Ocean</button>
+                        <button class="chip" onclick="quickVideoSearch('mountain peaks')">🏔️ Mountains</button>
+                        <button class="chip" onclick="quickVideoSearch('forest aerial')">🌲 Forest</button>
+                        <button class="chip" onclick="quickVideoSearch('sunset clouds')">🌅 Sunset</button>
+                        <button class="chip" onclick="quickVideoSearch('city night')">🌃 City</button>
+                        <button class="chip" onclick="quickVideoSearch('aurora borealis')">🌌 Aurora</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header"><span class="card-title">📍 Apply to</span></div>
+                    <div class="slots" id="videoSlots"></div>
+                </div>
+                
+                <div class="card" id="videoResultsCard" style="display: none;">
+                    <div class="card-header">
+                        <span class="card-title">Results</span>
+                        <span id="videoResultsCount" style="color: var(--text-muted); font-size: 0.8rem;"></span>
+                    </div>
+                    <div class="results-grid" id="videoResults"></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📹 Current Backgrounds</span>
+                        <button class="btn btn-ghost" onclick="resetMedia()">Reset</button>
+                    </div>
+                    <div class="media-grid" id="mediaGrid"></div>
+                </div>
+            </div>
+            
+            <!-- Images Panel -->
+            <div id="panel-images" class="panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📤 Upload Image</span>
+                    </div>
+                    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+                        <div id="uploadDefault">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">Click or drag image here</div>
+                            <div class="upload-hint">JPG, PNG, WebP supported</div>
+                        </div>
+                        <div id="uploadProgress" style="display: none;">
+                            <div class="upload-icon" style="animation: pulse 1s infinite;">⏳</div>
+                            <div class="upload-text">Uploading...</div>
+                            <div style="width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 0.5rem; overflow: hidden;">
+                                <div id="uploadBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                        <div id="uploadSuccess" style="display: none;">
+                            <div class="upload-icon">✅</div>
+                            <div class="upload-text">Upload complete!</div>
+                        </div>
+                    </div>
+                    <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="handleFileUpload(event)">
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🔍 Search Images</span>
+                    </div>
+                    <div class="search-box">
+                        <input type="text" class="search-input" id="imageSearch" placeholder="Search Pexels for images...">
+                        <div class="search-footer">
+                            <span class="search-hint">Press Enter to search</span>
+                            <button class="btn btn-primary" onclick="searchImages()">Search</button>
+                        </div>
+                    </div>
+                    <div class="chips">
+                        <button class="chip" onclick="quickImageSearch('ocean aerial')">🌊 Ocean</button>
+                        <button class="chip" onclick="quickImageSearch('mountain landscape')">🏔️ Mountains</button>
+                        <button class="chip" onclick="quickImageSearch('forest trees')">🌲 Forest</button>
+                        <button class="chip" onclick="quickImageSearch('sunset sky')">🌅 Sunset</button>
+                        <button class="chip" onclick="quickImageSearch('night city')">🌃 City</button>
+                        <button class="chip" onclick="quickImageSearch('abstract gradient')">🎨 Abstract</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header"><span class="card-title">📍 Apply to</span></div>
+                    <div class="slots" id="imageSlots"></div>
+                </div>
+                
+                <div class="card" id="imageResultsCard" style="display: none;">
+                    <div class="card-header">
+                        <span class="card-title">Results</span>
+                        <span id="imageResultsCount" style="color: var(--text-muted); font-size: 0.8rem;"></span>
+                    </div>
+                    <div class="results-grid" id="imageResults"></div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🖼️ Current Backgrounds</span>
+                    </div>
+                    <div class="media-grid" id="mediaGrid2"></div>
+                </div>
+            </div>
+            
+            <!-- Colors Panel -->
+            <div id="panel-colors" class="panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">✨ Describe your color scheme</span>
+                    </div>
+                    <div class="prompt-box">
+                        <textarea class="prompt-textarea" id="colorPrompt" placeholder="Describe the colors you want...
+
+Examples:
+• 'warm sunset with orange and purple'
+• 'ocean blues and teals'
+• 'modern minimal gray'
+• 'forest greens and earth tones'
+• 'tropical beach turquoise'
+• 'romantic rose pink'"></textarea>
+                        <div class="search-footer">
+                            <span class="search-hint">Smart color matching from your description</span>
+                            <button class="btn btn-primary" onclick="generateColors()">Generate</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">⚡ Presets</span>
+                    </div>
+                    <div class="quick-grid">
+                        <button class="quick-btn" onclick="applyColors('default')">
+                            <div class="quick-btn-icon">🟠</div>
+                            <div class="quick-btn-label">Default</div>
+                        </button>
+                        <button class="quick-btn" onclick="applyColors('ocean')">
+                            <div class="quick-btn-icon">🔵</div>
+                            <div class="quick-btn-label">Ocean</div>
+                        </button>
+                        <button class="quick-btn" onclick="applyColors('forest')">
+                            <div class="quick-btn-icon">🟢</div>
+                            <div class="quick-btn-label">Forest</div>
+                        </button>
+                        <button class="quick-btn" onclick="applyColors('sunset')">
+                            <div class="quick-btn-icon">🟣</div>
+                            <div class="quick-btn-label">Sunset</div>
+                        </button>
+                        <button class="quick-btn" onclick="applyColors('mono')">
+                            <div class="quick-btn-icon">⚫</div>
+                            <div class="quick-btn-label">Mono</div>
+                        </button>
+                        <button class="quick-btn" onclick="applyColors('warm')">
+                            <div class="quick-btn-icon">🟤</div>
+                            <div class="quick-btn-label">Warm</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🎨 Custom Colors</span>
+                        <button class="btn btn-ghost" onclick="resetColors()">Reset</button>
+                    </div>
+                    <div class="color-grid" id="colorGrid"></div>
+                </div>
+            </div>
+            
+            <!-- Content Panel -->
+            <div id="panel-content" class="panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">✨ Generate Content with AI</span>
+                    </div>
+                    <div class="prompt-box">
+                        <textarea class="prompt-textarea" id="contentPrompt" placeholder="Describe your website content...
+
+Examples:
+• 'A luxury electric camper van company'
+• 'A meditation and wellness app'
+• 'A sustainable fashion brand'
+• 'A modern architecture firm'"></textarea>
+                        <div class="search-footer">
+                            <span class="search-hint">AI generates all headlines and descriptions</span>
+                            <button class="btn btn-primary" onclick="generateContent()">Generate All</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🏠 Hero Section</span>
+                        <button class="btn btn-ghost" onclick="resetText('hero')">Reset</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tagline</label>
+                        <input type="text" class="form-input" id="heroTagline" placeholder="e.g., Future Natural" onchange="updateText()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Headline</label>
+                        <input type="text" class="form-input" id="heroHeadline" placeholder="e.g., Smooth Layers" onchange="updateText()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subheadline</label>
+                        <input type="text" class="form-input" id="heroSubheadline" placeholder="e.g., Buttery smooth scrolling..." onchange="updateText()">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">📑 Feature Slides</span>
+                        <button class="btn btn-ghost" onclick="resetText('slides')">Reset All</button>
+                    </div>
+                    
+                    <div class="section-header" onclick="toggleSection(0)">
+                        <span class="section-title">Slide 1</span>
+                        <span class="section-toggle" id="toggle0">▼</span>
+                    </div>
+                    <div class="section-content" id="section0">
+                        <div class="form-group">
+                            <label class="form-label">Label</label>
+                            <input type="text" class="form-input" id="slide0Label" placeholder="Feature 01" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-input" id="slide0Title" placeholder="100% Electric" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subtitle</label>
+                            <input type="text" class="form-input" id="slide0Subtitle" placeholder="Zero emissions, endless adventure" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-input form-textarea" id="slide0Desc" placeholder="Full description text..." onchange="updateText()"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section-header" onclick="toggleSection(1)">
+                        <span class="section-title">Slide 2</span>
+                        <span class="section-toggle" id="toggle1">▼</span>
+                    </div>
+                    <div class="section-content" id="section1">
+                        <div class="form-group">
+                            <label class="form-label">Label</label>
+                            <input type="text" class="form-input" id="slide1Label" placeholder="Feature 02" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-input" id="slide1Title" placeholder="Magic Hitch" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subtitle</label>
+                            <input type="text" class="form-input" id="slide1Subtitle" placeholder="Self-positioning connection" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-input form-textarea" id="slide1Desc" placeholder="Full description text..." onchange="updateText()"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section-header" onclick="toggleSection(2)">
+                        <span class="section-title">Slide 3</span>
+                        <span class="section-toggle" id="toggle2">▼</span>
+                    </div>
+                    <div class="section-content" id="section2">
+                        <div class="form-group">
+                            <label class="form-label">Label</label>
+                            <input type="text" class="form-input" id="slide2Label" placeholder="Feature 03" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-input" id="slide2Title" placeholder="Easy Tow" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subtitle</label>
+                            <input type="text" class="form-input" id="slide2Subtitle" placeholder="Dual-motor active towing" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-input form-textarea" id="slide2Desc" placeholder="Full description text..." onchange="updateText()"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section-header" onclick="toggleSection(3)">
+                        <span class="section-title">Slide 4</span>
+                        <span class="section-toggle" id="toggle3">▼</span>
+                    </div>
+                    <div class="section-content" id="section3">
+                        <div class="form-group">
+                            <label class="form-label">Label</label>
+                            <input type="text" class="form-input" id="slide3Label" placeholder="Feature 04" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-input" id="slide3Title" placeholder="Remote Control" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subtitle</label>
+                            <input type="text" class="form-input" id="slide3Subtitle" placeholder="Full maneuverability via app" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-input form-textarea" id="slide3Desc" placeholder="Full description text..." onchange="updateText()"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="section-header" onclick="toggleSection(4)">
+                        <span class="section-title">Slide 5</span>
+                        <span class="section-toggle" id="toggle4">▼</span>
+                    </div>
+                    <div class="section-content" id="section4">
+                        <div class="form-group">
+                            <label class="form-label">Label</label>
+                            <input type="text" class="form-input" id="slide4Label" placeholder="Feature 05" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Title</label>
+                            <input type="text" class="form-input" id="slide4Title" placeholder="InstaCamp" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Subtitle</label>
+                            <input type="text" class="form-input" id="slide4Subtitle" placeholder="One-touch setup" onchange="updateText()">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-input form-textarea" id="slide4Desc" placeholder="Full description text..." onchange="updateText()"></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🔚 Footer Section</span>
+                        <button class="btn btn-ghost" onclick="resetText('footer')">Reset</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tagline</label>
+                        <input type="text" class="form-input" id="footerTagline" placeholder="e.g., The Future is Natural" onchange="updateText()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CTA Button Text</label>
+                        <input type="text" class="form-input" id="footerCta" placeholder="e.g., Get Started" onchange="updateText()">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gallery Panel -->
+            <div id="panel-gallery" class="panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">🌐 Community Themes</span>
+                        <button class="btn btn-ghost" onclick="loadGallery()">Refresh</button>
+                    </div>
+                    <div class="sort-tabs">
+                        <button class="sort-tab active" onclick="sortGallery('recent')">Recent</button>
+                        <button class="sort-tab" onclick="sortGallery('popular')">Popular</button>
+                        <button class="sort-tab" onclick="sortGallery('views')">Most Viewed</button>
+                    </div>
+                    <div class="theme-grid" id="galleryGrid">
+                        <div class="empty" style="grid-column: 1/-1; padding: 2rem;">
+                            <div class="empty-icon">🌐</div>
+                            <div>Loading themes...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Save Modal -->
+    <div class="modal-overlay" id="saveModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">💾 Save to Cloud</span>
+                <button class="modal-close" onclick="closeSaveModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Theme Name *</label>
+                <input type="text" class="form-input" id="saveName" placeholder="My Awesome Theme">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-input form-textarea" id="saveDesc" placeholder="A brief description of your theme..."></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Your Name</label>
+                <input type="text" class="form-input" id="saveAuthor" placeholder="Anonymous">
+            </div>
+            <label class="checkbox-label">
+                <input type="checkbox" id="savePublic">
+                Share publicly in Theme Gallery
+            </label>
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeSaveModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveToCloud()">Save Theme</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load Modal -->
+    <div class="modal-overlay" id="loadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">📂 Load Theme</span>
+                <button class="modal-close" onclick="closeLoadModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Theme ID or Share URL</label>
+                <input type="text" class="form-input" id="loadId" placeholder="Paste theme ID or URL...">
+            </div>
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
+                Enter a theme ID (e.g., abc123-def456) or a full share URL
+            </p>
+            <div style="margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeLoadModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="loadFromCloud()">Load Theme</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">🔗 Share Theme</span>
+                <button class="modal-close" onclick="closeShareModal()">&times;</button>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+                Save your theme to get a shareable link that anyone can use to preview and apply your design.
+            </p>
+            <div id="shareContent">
+                <button class="btn btn-primary" onclick="saveAndShare()" style="width: 100%;">
+                    💾 Save & Generate Link
+                </button>
+            </div>
+            <div id="shareResult" style="display: none;">
+                <label class="form-label">Share URL</label>
+                <div class="share-box">
+                    <input type="text" class="share-input" id="shareUrl" readonly>
+                    <button class="btn btn-primary" onclick="copyShareUrl()">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        const PEXELS_KEY = 'JvHx5PnVieFkLRf42pUYRhIpF5stIfaJmjvSntlDXYOzwy1nmXGhpI6S';
+        
+        // Supabase Config
+        const SUPABASE_URL = 'https://wteiewheqyrbhxjzthcg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0ZWlld2hlcXlyYmh4anp0aGNnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY4MDQ3MDEsImV4cCI6MjA4MjM4MDcwMX0.-tIiLKyRzsmD4MYTahTJLXHDeeMWPPNzBAigH5UzHDA';
+        
+        const defaultMedia = {
+            hero: { label: "Hero", title: "Hero", url: "https://videos.pexels.com/video-files/1409899/1409899-uhd_2560_1440_25fps.mp4", type: "video" },
+            slide0: { label: "Slide 1", title: "Electric", url: "https://videos.pexels.com/video-files/1918465/1918465-uhd_2560_1440_24fps.mp4", type: "video" },
+            slide1: { label: "Slide 2", title: "Hitch", url: "https://videos.pexels.com/video-files/2169880/2169880-uhd_2560_1440_30fps.mp4", type: "video" },
+            slide2: { label: "Slide 3", title: "Tow", url: "https://videos.pexels.com/video-files/1093662/1093662-uhd_2560_1440_30fps.mp4", type: "video" },
+            slide3: { label: "Slide 4", title: "Remote", url: "https://videos.pexels.com/video-files/3015510/3015510-uhd_2560_1440_24fps.mp4", type: "video" },
+            slide4: { label: "Slide 5", title: "Camp", url: "https://videos.pexels.com/video-files/4763824/4763824-uhd_2560_1440_24fps.mp4", type: "video" }
+        };
+        
+        const defaultColors = {
+            accentOrange: '#e85d24', accentSage: '#7d8c6e', accentSlate: '#4a5568',
+            bgCream: '#f5f3ef', bgDark: '#1a1a1a', accentTaupe: '#a39b8b'
+        };
+        
+        const colorPresets = {
+            default: { accentOrange: '#e85d24', accentSage: '#7d8c6e', accentSlate: '#4a5568', bgCream: '#f5f3ef', bgDark: '#1a1a1a' },
+            ocean: { accentOrange: '#0ea5e9', accentSage: '#06b6d4', accentSlate: '#0284c7', bgCream: '#f0f9ff', bgDark: '#0c4a6e' },
+            forest: { accentOrange: '#22c55e', accentSage: '#4ade80', accentSlate: '#166534', bgCream: '#f0fdf4', bgDark: '#14532d' },
+            sunset: { accentOrange: '#f97316', accentSage: '#fb923c', accentSlate: '#9333ea', bgCream: '#fef3c7', bgDark: '#1e1b4b' },
+            mono: { accentOrange: '#525252', accentSage: '#737373', accentSlate: '#404040', bgCream: '#fafafa', bgDark: '#171717' },
+            warm: { accentOrange: '#dc2626', accentSage: '#b45309', accentSlate: '#92400e', bgCream: '#fef2f2', bgDark: '#292524' }
+        };
+        
+        const themes = {
+            ocean: { q: 'ocean waves', c: colorPresets.ocean },
+            mountain: { q: 'mountain landscape', c: colorPresets.default },
+            forest: { q: 'forest aerial', c: colorPresets.forest },
+            sunset: { q: 'sunset clouds', c: colorPresets.sunset },
+            night: { q: 'city night timelapse', c: colorPresets.mono }
+        };
+        
+        const colorLabels = {
+            accentOrange: 'Primary', accentSage: 'Secondary', accentSlate: 'Tertiary',
+            bgCream: 'Light BG', bgDark: 'Dark BG', accentTaupe: 'Neutral'
+        };
+        
+        const defaultText = {
+            hero: {
+                tagline: 'Future Natural',
+                headline: 'Smooth Layers',
+                subheadline: 'Buttery smooth scrolling with video backgrounds'
+            },
+            slides: [
+                { label: 'Feature 01', title: '100% Electric', subtitle: 'Zero emissions, endless adventure', desc: 'No more fossil fuels, buzzing generators, and propane tanks. Power for days with clean, silent energy.' },
+                { label: 'Feature 02', title: 'Magic Hitch', subtitle: 'Self-positioning connection', desc: 'With one touch, sense, self-position, and safely attach to your tow vehicle. Effortless connection.' },
+                { label: 'Feature 03', title: 'Easy Tow', subtitle: 'Dual-motor active towing', desc: 'The world\'s first dual-motor active towing system. Improved efficiency with unwavering confidence.' },
+                { label: 'Feature 04', title: 'Remote Control', subtitle: 'Full maneuverability via app', desc: 'Never back up again. Fully remote-controllable positioning. Pivot effortlessly into tight spots.' },
+                { label: 'Feature 05', title: 'InstaCamp', subtitle: 'One-touch setup', desc: 'Be camp-ready in seconds. One touch sets up leveling, stairs, thermostat, and lights automatically.' }
+            ],
+            footer: {
+                tagline: 'The Future is Natural',
+                cta: 'Get Started'
+            }
+        };
+        
+        // State
+        let media = {...defaultMedia};
+        let colors = {...defaultColors};
+        let text = JSON.parse(JSON.stringify(defaultText));
+        let selectedSlot = 'hero';
+        let currentThemeId = null;
+        let saveTimeout = null;
+        
+        // Get or create session theme ID
+        function getSessionThemeId() {
+            // Check URL first
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlId = urlParams.get('theme');
+            if (urlId) return urlId;
+            
+            // Check cookie
+            const cookie = document.cookie.split('; ').find(c => c.startsWith('pebbleThemeId='));
+            if (cookie) return cookie.split('=')[1];
+            
+            return null;
+        }
+        
+        function setSessionThemeId(id) {
+            currentThemeId = id;
+            document.cookie = `pebbleThemeId=${id}; path=/; max-age=31536000`; // 1 year
+            // Update URL without reload
+            const url = new URL(window.location);
+            url.searchParams.set('theme', id);
+            window.history.replaceState({}, '', url);
+        }
+        
+        // Supabase API helpers
+        async function supabaseGet(endpoint) {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                }
+            });
+            return response.json();
+        }
+        
+        async function supabasePost(endpoint, data) {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }
+        
+        async function supabasePatch(endpoint, data) {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify(data)
+            });
+            return response.json();
+        }
+        
+        // Load theme from Supabase
+        async function loadTheme(id) {
+            try {
+                const data = await supabaseGet(`themes?id=eq.${id}&select=*`);
+                if (data && data.length > 0) {
+                    const theme = data[0];
+                    if (theme.media) media = theme.media;
+                    if (theme.colors) colors = theme.colors;
+                    if (theme.text_content) text = theme.text_content;
+                    currentThemeId = theme.id;
+                    return true;
+                }
+            } catch (e) {
+                console.error('Failed to load theme:', e);
+            }
+            return false;
+        }
+        
+        // Save theme to Supabase (debounced)
+        function save() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveNow, 1000); // Debounce 1 second
+        }
+        
+        async function saveNow() {
+            try {
+                if (currentThemeId) {
+                    // Update existing theme
+                    await supabasePatch(`themes?id=eq.${currentThemeId}`, {
+                        media,
+                        colors,
+                        text_content: text,
+                        updated_at: new Date().toISOString()
+                    });
+                    console.log('Theme updated');
+                } else {
+                    // Create new session theme
+                    const result = await supabasePost('themes', {
+                        name: 'Session ' + new Date().toLocaleString(),
+                        author: 'Anonymous',
+                        media,
+                        colors,
+                        text_content: text,
+                        is_public: false
+                    });
+                    if (result && result[0]) {
+                        setSessionThemeId(result[0].id);
+                        console.log('Theme created:', result[0].id);
+                    }
+                }
+            } catch (e) {
+                console.error('Save failed:', e);
+                toast('Save failed', 'error');
+            }
+        }
+        
+        // Initialize
+        async function init() {
+            setLoading(true);
+            
+            // Try to load existing theme
+            const sessionId = getSessionThemeId();
+            if (sessionId) {
+                const loaded = await loadTheme(sessionId);
+                if (loaded) {
+                    console.log('Loaded theme:', sessionId);
+                }
+            }
+            
+            renderSlots();
+            renderMedia();
+            renderColors();
+            loadTextFields();
+            setupEventListeners();
+            setupDragDrop();
+            loadGallery();
+            
+            setLoading(false);
+        }
+        
+        function setupEventListeners() {
+            document.getElementById('videoSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchVideos(); });
+            document.getElementById('imageSearch').addEventListener('keydown', e => { if (e.key === 'Enter') searchImages(); });
+            document.getElementById('colorPrompt').addEventListener('keydown', e => { if (e.key === 'Enter' && e.ctrlKey) generateColors(); });
+            document.getElementById('contentPrompt').addEventListener('keydown', e => { if (e.key === 'Enter' && e.ctrlKey) generateContent(); });
+        }
+        
+        function setupDragDrop() {
+            const zone = document.getElementById('uploadZone');
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            });
+        }
+        
+        function showPanel(p) {
+            document.querySelectorAll('.panel').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById(`panel-${p}`).classList.add('active');
+            document.querySelector(`.nav-item[onclick="showPanel('${p}')"]`)?.classList.add('active');
+            const titles = { videos: 'Videos', images: 'Images', colors: 'Colors', content: 'Content', gallery: 'Theme Gallery' };
+            document.getElementById('panelTitle').textContent = titles[p] || p;
+            if (p === 'images') renderMedia2();
+            if (p === 'content') loadTextFields();
+            if (p === 'gallery') loadGallery();
+        }
+        
+        function renderSlots() {
+            const html = Object.entries(media).map(([k, v]) => 
+                `<button class="slot ${k === selectedSlot ? 'active' : ''}" onclick="selectSlot('${k}')">${v.label}</button>`
+            ).join('') + `<button class="slot ${selectedSlot === 'all' ? 'active' : ''}" onclick="selectSlot('all')">All</button>`;
+            
+            document.getElementById('videoSlots').innerHTML = html;
+            document.getElementById('imageSlots').innerHTML = html;
+        }
+        
+        function selectSlot(s) {
+            selectedSlot = s;
+            renderSlots();
+        }
+        
+        function renderMedia() {
+            document.getElementById('mediaGrid').innerHTML = Object.entries(media).map(([k, v]) => `
+                <div class="media-card" onclick="selectSlot('${k}')">
+                    <div class="media-thumb">
+                        ${v.type === 'video' 
+                            ? `<video src="${v.url}" muted loop onmouseenter="this.play()" onmouseleave="this.pause();this.currentTime=0"></video>`
+                            : `<img src="${v.url}" alt="${v.title}">`
+                        }
+                        <span class="type-badge">${v.type}</span>
+                    </div>
+                    <div class="media-meta">
+                        <div class="media-label">${v.label}</div>
+                        <div class="media-title">${v.title}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function renderMedia2() {
+            document.getElementById('mediaGrid2').innerHTML = document.getElementById('mediaGrid').innerHTML;
+        }
+        
+        function renderColors() {
+            document.getElementById('colorGrid').innerHTML = Object.entries(colors)
+                .filter(([k]) => colorLabels[k])
+                .map(([k, v]) => `
+                    <div class="color-item">
+                        <input type="color" class="color-swatch" value="${v}" onchange="setColor('${k}', this.value)">
+                        <div class="color-info">
+                            <div class="color-name">${colorLabels[k]}</div>
+                            <div class="color-value">${v}</div>
+                        </div>
+                    </div>
+                `).join('');
+        }
+        
+        // Video Search
+        function quickVideoSearch(q) {
+            document.getElementById('videoSearch').value = q;
+            searchVideos();
+        }
+        
+        async function searchVideos() {
+            const q = document.getElementById('videoSearch').value.trim();
+            if (!q) return;
+            
+            setLoading(true);
+            try {
+                const res = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&per_page=18`, {
+                    headers: { Authorization: PEXELS_KEY }
+                });
+                const data = await res.json();
+                renderVideoResults(data.videos);
+                toast(`Found ${data.videos.length} videos`, 'success');
+            } catch (e) {
+                toast('Search failed', 'error');
+            }
+            setLoading(false);
+        }
+        
+        function renderVideoResults(list) {
+            const card = document.getElementById('videoResultsCard');
+            if (!list.length) { card.style.display = 'none'; return; }
+            
+            card.style.display = 'block';
+            document.getElementById('videoResultsCount').textContent = `${list.length} videos`;
+            document.getElementById('videoResults').innerHTML = list.map((v, i) => `
+                <div class="result-card" onclick="applyVideo(${i})">
+                    <img src="${v.image}" alt="">
+                </div>
+            `).join('');
+            
+            window._videoResults = list;
+        }
+        
+        function applyVideo(i) {
+            const v = window._videoResults[i];
+            const hd = v.video_files.find(f => f.quality === 'hd') || v.video_files[0];
+            
+            if (selectedSlot === 'all') {
+                Object.keys(media).forEach(k => { media[k].url = hd.link; media[k].type = 'video'; });
+                toast('Applied to all', 'success');
+            } else {
+                media[selectedSlot].url = hd.link;
+                media[selectedSlot].type = 'video';
+                toast(`Applied to ${media[selectedSlot].label}`, 'success');
+            }
+            
+            save(); renderMedia(); renderMedia2();
+        }
+        
+        // Image Search
+        function quickImageSearch(q) {
+            document.getElementById('imageSearch').value = q;
+            searchImages();
+        }
+        
+        async function searchImages() {
+            const q = document.getElementById('imageSearch').value.trim();
+            if (!q) return;
+            
+            setLoading(true);
+            try {
+                const res = await fetch(`https://api.pexels.com/v1/search?query=${encodeURIComponent(q)}&per_page=18&orientation=landscape`, {
+                    headers: { Authorization: PEXELS_KEY }
+                });
+                const data = await res.json();
+                renderImageResults(data.photos);
+                toast(`Found ${data.photos.length} images`, 'success');
+            } catch (e) {
+                toast('Search failed', 'error');
+            }
+            setLoading(false);
+        }
+        
+        function renderImageResults(list) {
+            const card = document.getElementById('imageResultsCard');
+            if (!list.length) { card.style.display = 'none'; return; }
+            
+            card.style.display = 'block';
+            document.getElementById('imageResultsCount').textContent = `${list.length} images`;
+            document.getElementById('imageResults').innerHTML = list.map((p, i) => `
+                <div class="result-card" onclick="applyImage(${i})">
+                    <img src="${p.src.medium}" alt="">
+                </div>
+            `).join('');
+            
+            window._imageResults = list;
+        }
+        
+        function applyImage(i) {
+            const p = window._imageResults[i];
+            const url = p.src.original || p.src.large2x || p.src.large;
+            
+            if (selectedSlot === 'all') {
+                Object.keys(media).forEach(k => { media[k].url = url; media[k].type = 'image'; });
+                toast('Applied to all', 'success');
+            } else {
+                media[selectedSlot].url = url;
+                media[selectedSlot].type = 'image';
+                toast(`Applied to ${media[selectedSlot].label}`, 'success');
+            }
+            
+            save(); renderMedia(); renderMedia2();
+        }
+        
+        // Supabase Storage config
+        async function uploadToSupabase(file) {
+            const fileName = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${file.type.split('/')[1] || 'jpg'}`;
+            console.log('Uploading to Supabase:', fileName, 'Size:', file.size);
+            
+            const response = await fetch(`${SUPABASE_URL}/storage/v1/object/media/${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Content-Type': file.type,
+                    'x-upsert': 'true'
+                },
+                body: file
+            });
+            
+            console.log('Upload response status:', response.status);
+            
+            if (!response.ok) {
+                const error = await response.text();
+                console.error('Upload error:', error);
+                throw new Error('Upload failed: ' + error);
+            }
+            
+            // Return public URL
+            const url = `${SUPABASE_URL}/storage/v1/object/public/media/${fileName}`;
+            console.log('Upload success, URL:', url);
+            return url;
+        }
+        
+        // File Upload
+        function handleFileUpload(e) {
+            console.log('File input changed');
+            if (e.target.files.length) {
+                console.log('File selected:', e.target.files[0].name);
+                handleFile(e.target.files[0]);
+            }
+        }
+        
+        function showUploadState(state) {
+            document.getElementById('uploadDefault').style.display = state === 'default' ? 'block' : 'none';
+            document.getElementById('uploadProgress').style.display = state === 'progress' ? 'block' : 'none';
+            document.getElementById('uploadSuccess').style.display = state === 'success' ? 'block' : 'none';
+        }
+        
+        function setUploadProgress(percent) {
+            document.getElementById('uploadBar').style.width = percent + '%';
+        }
+        
+        async function handleFile(file) {
+            console.log('handleFile called with:', file.name, file.type, file.size);
+            
+            if (!file.type.startsWith('image/')) {
+                toast('Please upload an image', 'error');
+                return;
+            }
+            
+            // Show progress
+            showUploadState('progress');
+            setUploadProgress(10);
+            setLoading(true);
+            
+            try {
+                setUploadProgress(30);
+                
+                // Upload to Supabase Storage
+                const url = await uploadToSupabase(file);
+                
+                setUploadProgress(70);
+                
+                if (selectedSlot === 'all') {
+                    Object.keys(media).forEach(k => { media[k].url = url; media[k].type = 'image'; });
+                    toast('Applied to all slots!', 'success');
+                } else {
+                    media[selectedSlot].url = url;
+                    media[selectedSlot].type = 'image';
+                    toast(`Applied to ${media[selectedSlot].label}!`, 'success');
+                }
+                
+                setUploadProgress(90);
+                
+                save(); 
+                renderMedia(); 
+                renderMedia2();
+                
+                setUploadProgress(100);
+                showUploadState('success');
+                
+                // Reset after 2 seconds
+                setTimeout(() => showUploadState('default'), 2000);
+                
+            } catch (e) {
+                console.error('Upload failed:', e);
+                toast('Upload failed: ' + e.message, 'error');
+                showUploadState('default');
+            }
+            
+            setLoading(false);
+            // Clear file input so same file can be uploaded again
+            document.getElementById('fileInput').value = '';
+        }
+        
+        // API endpoint - change this to your Vercel deployment URL
+        const API_URL = '/api/generate-colors'; // Works when deployed to Vercel
+        
+        // Color Generation - tries API first, falls back to local parsing
+        async function generateColors() {
+            const prompt = document.getElementById('colorPrompt').value.trim();
+            if (!prompt) {
+                toast('Enter a description', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            
+            // Try API first
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.colors) {
+                        colors = {...colors, ...data.colors};
+                        save();
+                        renderColors();
+                        toast('Colors generated by AI!', 'success');
+                        setLoading(false);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('API not available, using local fallback');
+            }
+            
+            // Fallback to local parsing
+            const newColors = parseColorDescription(prompt.toLowerCase());
+            colors = {...colors, ...newColors};
+            save();
+            renderColors();
+            toast('Colors generated!', 'success');
+            setLoading(false);
+        }
+        
+        // Intelligent color parser - analyzes description keywords
+        function parseColorDescription(prompt) {
+            // Color keyword mappings
+            const colorKeywords = {
+                // Reds/Oranges/Warm
+                red: '#dc2626', crimson: '#dc143c', scarlet: '#ff2400',
+                orange: '#f97316', tangerine: '#ff9966', coral: '#ff7f50',
+                peach: '#ffcba4', salmon: '#fa8072', rust: '#b7410e',
+                
+                // Yellows/Golds
+                yellow: '#eab308', gold: '#ffd700', amber: '#ffbf00',
+                honey: '#eb9605', mustard: '#ffdb58', lemon: '#fff44f',
+                
+                // Greens
+                green: '#22c55e', forest: '#228b22', sage: '#9dc183',
+                olive: '#808000', mint: '#98fb98', emerald: '#50c878',
+                lime: '#32cd32', teal: '#008080', pine: '#01796f',
+                
+                // Blues
+                blue: '#3b82f6', navy: '#000080', sky: '#87ceeb',
+                ocean: '#0077be', azure: '#007fff', cobalt: '#0047ab',
+                cyan: '#00ffff', aqua: '#00ffff', turquoise: '#40e0d0',
+                
+                // Purples
+                purple: '#9333ea', violet: '#8b00ff', lavender: '#e6e6fa',
+                plum: '#dda0dd', magenta: '#ff00ff', indigo: '#4b0082',
+                grape: '#6f2da8', mauve: '#e0b0ff',
+                
+                // Pinks
+                pink: '#ec4899', rose: '#ff007f', blush: '#de5d83',
+                fuchsia: '#ff00ff', hotpink: '#ff69b4',
+                
+                // Browns/Earth
+                brown: '#8b4513', chocolate: '#7b3f00', coffee: '#6f4e37',
+                tan: '#d2b48c', beige: '#f5f5dc', taupe: '#483c32',
+                earth: '#5c4033', sienna: '#a0522d', umber: '#635147',
+                
+                // Neutrals
+                black: '#171717', charcoal: '#36454f', gray: '#6b7280',
+                grey: '#6b7280', silver: '#c0c0c0', slate: '#708090',
+                white: '#fafafa', cream: '#fffdd0', ivory: '#fffff0',
+                
+                // Special themes
+                sunset: '#ff6b35', sunrise: '#ffb347', dusk: '#1e1b4b',
+                dawn: '#fef3c7', night: '#0f172a', midnight: '#191970',
+                fire: '#ff4500', ice: '#a5f3fc', sand: '#c2b280',
+                snow: '#fffafa', cloud: '#f0f0f0', storm: '#4a5568'
+            };
+            
+            // Theme presets for common descriptions
+            const themePatterns = [
+                { 
+                    patterns: ['sunset', 'warm sunset', 'orange purple', 'evening'],
+                    colors: { accentOrange: '#f97316', accentSage: '#fb923c', accentSlate: '#9333ea', bgCream: '#fef3c7', bgDark: '#1e1b4b', accentTaupe: '#c2410c' }
+                },
+                {
+                    patterns: ['ocean', 'sea', 'marine', 'blue teal', 'water'],
+                    colors: { accentOrange: '#0ea5e9', accentSage: '#06b6d4', accentSlate: '#0284c7', bgCream: '#f0f9ff', bgDark: '#0c4a6e', accentTaupe: '#0891b2' }
+                },
+                {
+                    patterns: ['forest', 'nature', 'green', 'earth', 'natural'],
+                    colors: { accentOrange: '#22c55e', accentSage: '#4ade80', accentSlate: '#166534', bgCream: '#f0fdf4', bgDark: '#14532d', accentTaupe: '#65a30d' }
+                },
+                {
+                    patterns: ['minimal', 'modern', 'mono', 'gray', 'grey', 'clean'],
+                    colors: { accentOrange: '#525252', accentSage: '#737373', accentSlate: '#404040', bgCream: '#fafafa', bgDark: '#171717', accentTaupe: '#a3a3a3' }
+                },
+                {
+                    patterns: ['warm', 'cozy', 'autumn', 'fall', 'brown'],
+                    colors: { accentOrange: '#dc2626', accentSage: '#b45309', accentSlate: '#92400e', bgCream: '#fef2f2', bgDark: '#292524', accentTaupe: '#a16207' }
+                },
+                {
+                    patterns: ['night', 'dark', 'midnight', 'space'],
+                    colors: { accentOrange: '#8b5cf6', accentSage: '#a78bfa', accentSlate: '#6366f1', bgCream: '#1e1b4b', bgDark: '#0f0a1e', accentTaupe: '#7c3aed' }
+                },
+                {
+                    patterns: ['sunrise', 'morning', 'dawn', 'soft'],
+                    colors: { accentOrange: '#fb923c', accentSage: '#fcd34d', accentSlate: '#f472b6', bgCream: '#fffbeb', bgDark: '#451a03', accentTaupe: '#fdba74' }
+                },
+                {
+                    patterns: ['rose', 'pink', 'romantic', 'blush'],
+                    colors: { accentOrange: '#ec4899', accentSage: '#f472b6', accentSlate: '#db2777', bgCream: '#fdf2f8', bgDark: '#500724', accentTaupe: '#f9a8d4' }
+                },
+                {
+                    patterns: ['lavender', 'purple', 'violet', 'calm'],
+                    colors: { accentOrange: '#8b5cf6', accentSage: '#a78bfa', accentSlate: '#7c3aed', bgCream: '#f5f3ff', bgDark: '#2e1065', accentTaupe: '#c4b5fd' }
+                },
+                {
+                    patterns: ['tropical', 'beach', 'paradise', 'island'],
+                    colors: { accentOrange: '#14b8a6', accentSage: '#2dd4bf', accentSlate: '#0d9488', bgCream: '#f0fdfa', bgDark: '#134e4a', accentTaupe: '#5eead4' }
+                }
+            ];
+            
+            // Check for theme pattern matches first
+            for (const theme of themePatterns) {
+                for (const pattern of theme.patterns) {
+                    if (prompt.includes(pattern)) {
+                        return theme.colors;
+                    }
+                }
+            }
+            
+            // Extract colors from description
+            let foundColors = [];
+            for (const [name, hex] of Object.entries(colorKeywords)) {
+                if (prompt.includes(name)) {
+                    foundColors.push({ name, hex });
+                }
+            }
+            
+            // Build palette from found colors
+            if (foundColors.length > 0) {
+                const result = {...defaultColors};
+                
+                // Primary color (first mentioned)
+                result.accentOrange = foundColors[0].hex;
+                
+                // Secondary colors
+                if (foundColors.length > 1) {
+                    result.accentSage = foundColors[1].hex;
+                }
+                if (foundColors.length > 2) {
+                    result.accentSlate = foundColors[2].hex;
+                }
+                
+                // Determine if dark or light theme based on keywords
+                if (prompt.includes('dark') || prompt.includes('night') || prompt.includes('deep')) {
+                    result.bgCream = '#1a1a2e';
+                    result.bgDark = '#0a0a0f';
+                } else if (prompt.includes('light') || prompt.includes('bright') || prompt.includes('soft')) {
+                    result.bgCream = '#fafafa';
+                    result.bgDark = '#1a1a1a';
+                }
+                
+                return result;
+            }
+            
+            // Default: return sunset-inspired palette
+            return colorPresets.sunset;
+        }
+        
+        // Themes & Presets
+        async function applyTheme(name) {
+            const t = themes[name];
+            if (!t) return;
+            
+            setLoading(true);
+            colors = {...colors, ...t.c};
+            save(); renderColors();
+            
+            try {
+                const res = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(t.q)}&per_page=10`, {
+                    headers: { Authorization: PEXELS_KEY }
+                });
+                const data = await res.json();
+                
+                if (data.videos.length >= 6) {
+                    ['hero','slide0','slide1','slide2','slide3','slide4'].forEach((k, i) => {
+                        const hd = data.videos[i].video_files.find(f => f.quality === 'hd') || data.videos[i].video_files[0];
+                        media[k].url = hd.link;
+                        media[k].type = 'video';
+                    });
+                    save(); renderMedia();
+                }
+                toast(`Applied ${name} theme`, 'success');
+            } catch (e) {
+                toast('Could not apply theme', 'error');
+            }
+            setLoading(false);
+        }
+        
+        function applyColors(name) {
+            const p = colorPresets[name];
+            if (!p) return;
+            colors = {...colors, ...p};
+            save(); renderColors();
+            toast(`Applied ${name} colors`, 'success');
+        }
+        
+        function setColor(k, v) {
+            colors[k] = v;
+            save(); renderColors();
+        }
+        
+        // Reset
+        function resetMedia() {
+            if (!confirm('Reset all backgrounds?')) return;
+            media = JSON.parse(JSON.stringify(defaultMedia));
+            save(); renderMedia(); renderMedia2();
+            toast('Backgrounds reset', 'success');
+        }
+        
+        function resetColors() {
+            if (!confirm('Reset colors?')) return;
+            colors = {...defaultColors};
+            save(); renderColors();
+            toast('Colors reset', 'success');
+        }
+        
+        // Text Functions
+        function loadTextFields() {
+            // Hero
+            document.getElementById('heroTagline').value = text.hero?.tagline || '';
+            document.getElementById('heroHeadline').value = text.hero?.headline || '';
+            document.getElementById('heroSubheadline').value = text.hero?.subheadline || '';
+            
+            // Slides
+            for (let i = 0; i < 5; i++) {
+                const slide = text.slides?.[i] || {};
+                document.getElementById(`slide${i}Label`).value = slide.label || '';
+                document.getElementById(`slide${i}Title`).value = slide.title || '';
+                document.getElementById(`slide${i}Subtitle`).value = slide.subtitle || '';
+                document.getElementById(`slide${i}Desc`).value = slide.desc || '';
+            }
+            
+            // Footer
+            document.getElementById('footerTagline').value = text.footer?.tagline || '';
+            document.getElementById('footerCta').value = text.footer?.cta || '';
+        }
+        
+        function updateText() {
+            // Hero
+            text.hero = {
+                tagline: document.getElementById('heroTagline').value || defaultText.hero.tagline,
+                headline: document.getElementById('heroHeadline').value || defaultText.hero.headline,
+                subheadline: document.getElementById('heroSubheadline').value || defaultText.hero.subheadline
+            };
+            
+            // Slides
+            text.slides = [];
+            for (let i = 0; i < 5; i++) {
+                text.slides.push({
+                    label: document.getElementById(`slide${i}Label`).value || defaultText.slides[i].label,
+                    title: document.getElementById(`slide${i}Title`).value || defaultText.slides[i].title,
+                    subtitle: document.getElementById(`slide${i}Subtitle`).value || defaultText.slides[i].subtitle,
+                    desc: document.getElementById(`slide${i}Desc`).value || defaultText.slides[i].desc
+                });
+            }
+            
+            // Footer
+            text.footer = {
+                tagline: document.getElementById('footerTagline').value || defaultText.footer.tagline,
+                cta: document.getElementById('footerCta').value || defaultText.footer.cta
+            };
+            
+            save();
+            toast('Content saved', 'success');
+        }
+        
+        function toggleSection(index) {
+            const section = document.getElementById(`section${index}`);
+            const toggle = document.getElementById(`toggle${index}`);
+            section.classList.toggle('open');
+            toggle.classList.toggle('open');
+        }
+        
+        function resetText(section) {
+            if (!confirm(`Reset ${section} text to defaults?`)) return;
+            
+            if (section === 'hero') {
+                text.hero = JSON.parse(JSON.stringify(defaultText.hero));
+            } else if (section === 'slides') {
+                text.slides = JSON.parse(JSON.stringify(defaultText.slides));
+            } else if (section === 'footer') {
+                text.footer = JSON.parse(JSON.stringify(defaultText.footer));
+            }
+            
+            save();
+            loadTextFields();
+            toast(`${section} text reset`, 'success');
+        }
+        
+        async function generateContent() {
+            const prompt = document.getElementById('contentPrompt').value.trim();
+            if (!prompt) {
+                toast('Enter a description', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            
+            // Try API first
+            try {
+                const response = await fetch('/api/generate-content', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.content) {
+                        text = data.content;
+                        save();
+                        loadTextFields();
+                        toast('Content generated by AI!', 'success');
+                        setLoading(false);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.log('API not available, using local fallback');
+            }
+            
+            // Fallback: generate simple content locally
+            const brandName = prompt.split(' ').slice(0, 3).join(' ');
+            text = {
+                hero: {
+                    tagline: 'Welcome to ' + brandName,
+                    headline: brandName,
+                    subheadline: prompt
+                },
+                slides: [
+                    { label: 'Feature 01', title: 'Innovation', subtitle: 'Leading the way', desc: `Discover how ${brandName} is revolutionizing the industry with cutting-edge solutions.` },
+                    { label: 'Feature 02', title: 'Quality', subtitle: 'Excellence in every detail', desc: `We deliver uncompromising quality that sets us apart from the competition.` },
+                    { label: 'Feature 03', title: 'Sustainability', subtitle: 'Built for the future', desc: `Our commitment to sustainable practices ensures a better tomorrow.` },
+                    { label: 'Feature 04', title: 'Experience', subtitle: 'Crafted with care', desc: `Every interaction is designed to delight and inspire our customers.` },
+                    { label: 'Feature 05', title: 'Community', subtitle: 'Together we grow', desc: `Join our growing community of passionate individuals and businesses.` }
+                ],
+                footer: {
+                    tagline: 'Experience ' + brandName,
+                    cta: 'Get Started'
+                }
+            };
+            
+            save();
+            loadTextFields();
+            toast('Content generated!', 'success');
+            setLoading(false);
+        }
+        
+        // Open preview with current theme ID
+        async function openPreview() {
+            // Make sure we have a theme ID
+            if (!currentThemeId) {
+                await saveNow();
+            }
+            if (currentThemeId) {
+                window.open(`/pebble-dynamic.html?theme=${currentThemeId}`, '_blank');
+            } else {
+                toast('Save failed, cannot preview', 'error');
+            }
+        }
+        
+        // Export only (save is now defined earlier with Supabase)
+        function exportConfig() {
+            const blob = new Blob([JSON.stringify({ media, colors, text }, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'pebble-config.json';
+            a.click();
+            toast('Exported', 'success');
+        }
+        
+        // ============================================
+        // Cloud Save/Load & Gallery Functions
+        // ============================================
+        
+        let gallerySort = 'recent';
+        
+        // Modal Controls
+        function openSaveModal() {
+            document.getElementById('saveModal').classList.add('open');
+        }
+        
+        function closeSaveModal() {
+            document.getElementById('saveModal').classList.remove('open');
+        }
+        
+        function openLoadModal() {
+            document.getElementById('loadModal').classList.add('open');
+        }
+        
+        function closeLoadModal() {
+            document.getElementById('loadModal').classList.remove('open');
+        }
+        
+        function openShareModal() {
+            document.getElementById('shareModal').classList.add('open');
+            document.getElementById('shareContent').style.display = 'block';
+            document.getElementById('shareResult').style.display = 'none';
+        }
+        
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('open');
+        }
+        
+        // Save to Cloud
+        async function saveToCloud() {
+            const name = document.getElementById('saveName').value.trim();
+            if (!name) {
+                toast('Please enter a theme name', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                const response = await fetch('/api/themes/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name,
+                        description: document.getElementById('saveDesc').value.trim(),
+                        author: document.getElementById('saveAuthor').value.trim() || 'Anonymous',
+                        media,
+                        colors,
+                        text_content: text,
+                        is_public: document.getElementById('savePublic').checked
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to save');
+                
+                const data = await response.json();
+                currentThemeId = data.theme.id;
+                
+                toast('Theme saved to cloud!', 'success');
+                closeSaveModal();
+                
+                // Clear form
+                document.getElementById('saveName').value = '';
+                document.getElementById('saveDesc').value = '';
+                document.getElementById('savePublic').checked = false;
+                
+            } catch (e) {
+                console.error(e);
+                toast('Failed to save theme', 'error');
+            }
+            
+            setLoading(false);
+        }
+        
+        // Load from Cloud
+        async function loadFromCloud() {
+            let id = document.getElementById('loadId').value.trim();
+            
+            // Extract ID from URL if full URL provided
+            if (id.includes('/theme/')) {
+                id = id.split('/theme/').pop();
+            }
+            
+            if (!id) {
+                toast('Please enter a theme ID', 'error');
+                return;
+            }
+            
+            setLoading(true);
+            
+            try {
+                const response = await fetch(`/api/themes/get?id=${id}`);
+                
+                if (!response.ok) throw new Error('Theme not found');
+                
+                const data = await response.json();
+                const theme = data.theme;
+                
+                // Apply theme
+                if (theme.media) media = theme.media;
+                if (theme.colors) colors = theme.colors;
+                if (theme.text_content) text = theme.text_content;
+                
+                currentThemeId = theme.id;
+                
+                save();
+                renderMedia();
+                renderColors();
+                loadTextFields();
+                
+                toast(`Loaded: ${theme.name}`, 'success');
+                closeLoadModal();
+                document.getElementById('loadId').value = '';
+                
+            } catch (e) {
+                console.error(e);
+                toast('Failed to load theme', 'error');
+            }
+            
+            setLoading(false);
+        }
+        
+        // Save and Share
+        async function saveAndShare() {
+            setLoading(true);
+            
+            try {
+                const response = await fetch('/api/themes/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Shared Theme ' + new Date().toLocaleDateString(),
+                        description: 'Shared via link',
+                        author: 'Anonymous',
+                        media,
+                        colors,
+                        text_content: text,
+                        is_public: false
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Failed to save');
+                
+                const data = await response.json();
+                currentThemeId = data.theme.id;
+                
+                const shareUrl = window.location.origin + '/theme/' + data.theme.id;
+                document.getElementById('shareUrl').value = shareUrl;
+                document.getElementById('shareContent').style.display = 'none';
+                document.getElementById('shareResult').style.display = 'block';
+                
+                toast('Share link created!', 'success');
+                
+            } catch (e) {
+                console.error(e);
+                toast('Failed to create share link', 'error');
+            }
+            
+            setLoading(false);
+        }
+        
+        function copyShareUrl() {
+            const url = document.getElementById('shareUrl').value;
+            navigator.clipboard.writeText(url);
+            toast('URL copied!', 'success');
+        }
+        
+        // Gallery Functions
+        async function loadGallery() {
+            const grid = document.getElementById('galleryGrid');
+            grid.innerHTML = '<div class="empty" style="grid-column: 1/-1; padding: 2rem;"><div>Loading...</div></div>';
+            
+            try {
+                const response = await fetch(`/api/themes/gallery?sort=${gallerySort}&limit=20`);
+                
+                if (!response.ok) throw new Error('Failed to load gallery');
+                
+                const data = await response.json();
+                renderGallery(data.themes);
+                
+            } catch (e) {
+                console.error(e);
+                grid.innerHTML = '<div class="empty" style="grid-column: 1/-1; padding: 2rem;"><div class="empty-icon">😕</div><div>Failed to load themes</div></div>';
+            }
+        }
+        
+        function renderGallery(themes) {
+            const grid = document.getElementById('galleryGrid');
+            
+            if (!themes || themes.length === 0) {
+                grid.innerHTML = '<div class="empty" style="grid-column: 1/-1; padding: 2rem;"><div class="empty-icon">🎨</div><div>No themes yet. Be the first to share!</div></div>';
+                return;
+            }
+            
+            grid.innerHTML = themes.map(theme => {
+                const c = theme.colors || {};
+                return `
+                    <div class="theme-card" onclick="loadGalleryTheme('${theme.id}')">
+                        <div class="theme-preview">
+                            <div class="theme-preview-swatch" style="background: ${c.accentOrange || '#e85d24'}"></div>
+                            <div class="theme-preview-swatch" style="background: ${c.accentSage || '#7d8c6e'}"></div>
+                            <div class="theme-preview-swatch" style="background: ${c.bgCream || '#f5f3ef'}"></div>
+                            <div class="theme-preview-swatch" style="background: ${c.bgDark || '#1a1a1a'}"></div>
+                        </div>
+                        <div class="theme-info">
+                            <div class="theme-name">${escapeHtml(theme.name)}</div>
+                            <div class="theme-meta">
+                                <span>${escapeHtml(theme.author || 'Anonymous')}</span>
+                                <div class="theme-stats">
+                                    <span>❤️ ${theme.likes || 0}</span>
+                                    <span>👁️ ${theme.views || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function loadGalleryTheme(id) {
+            setLoading(true);
+            
+            try {
+                const response = await fetch(`/api/themes/get?id=${id}`);
+                if (!response.ok) throw new Error('Theme not found');
+                
+                const data = await response.json();
+                const theme = data.theme;
+                
+                if (theme.media) media = theme.media;
+                if (theme.colors) colors = theme.colors;
+                if (theme.text_content) text = theme.text_content;
+                
+                currentThemeId = theme.id;
+                
+                save();
+                renderMedia();
+                renderColors();
+                loadTextFields();
+                
+                toast(`Applied: ${theme.name}`, 'success');
+                showPanel('videos');
+                
+            } catch (e) {
+                console.error(e);
+                toast('Failed to load theme', 'error');
+            }
+            
+            setLoading(false);
+        }
+        
+        function sortGallery(sort) {
+            gallerySort = sort;
+            document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            loadGallery();
+        }
+        
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        
+        // Check URL for theme ID on load
+        function checkUrlForTheme() {
+            const path = window.location.pathname;
+            if (path.startsWith('/theme/')) {
+                const id = path.replace('/theme/', '');
+                if (id) {
+                    document.getElementById('loadId').value = id;
+                    loadFromCloud();
+                }
+            }
+        }
+        
+        // Utils
+        function setLoading(on) {
+            document.getElementById('statusDot').classList.toggle('loading', on);
+            document.getElementById('statusText').textContent = on ? 'Loading...' : 'Ready';
+        }
+        
+        function toast(msg, type) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = `toast ${type} show`;
+            setTimeout(() => el.classList.remove('show'), 2500);
+        }
+        
+        init();
+    </script>
+</body>
+</html>
