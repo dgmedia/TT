@@ -1,137 +1,69 @@
-# Pebble Studio - Vercel + Supabase Deployment
+# Pebble Studio (Next.js)
 
-A visual dashboard for customizing video backgrounds and colors, with cloud save, theme gallery, and shareable links powered by Supabase.
+A modern scroll experience builder with video backgrounds, built with Next.js 15.
 
-## Quick Deploy to Vercel
+## Stack
 
-### 1. Set up Supabase
-1. Go to [supabase.com](https://supabase.com) and create a project
-2. Go to SQL Editor → New Query
-3. Paste contents of `supabase-schema.sql` and click Run
-4. Go to Project Settings → API and copy your `anon` `public` key
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State**: Jotai
+- **Animations**: GSAP + ScrollTrigger
+- **Charts**: VisActor
+- **Database**: Supabase
+- **Deployment**: Vercel
 
-### 2. Install Vercel CLI
+## Features
+
+- 🎬 **Media Panel** - Upload images or search Pexels for videos/images
+- 🎨 **Colors Panel** - AI-powered color generation or manual pickers
+- ✏️ **Content Panel** - Edit all text content
+- 🌐 **Gallery** - Browse, like, and use community themes
+- 📊 **Admin Dashboard** - Analytics with VisActor charts
+
+## Getting Started
+
+1. Clone and install:
 ```bash
-npm install -g vercel
+git clone <repo>
+cd pebble-next
+npm install
 ```
 
-### 3. Deploy
+2. Set up environment:
 ```bash
-cd pebble-vercel
-vercel
+cp .env.example .env.local
+# Edit .env.local with your Supabase and Groq keys
 ```
 
-### 4. Add Environment Variables
-In Vercel dashboard (Settings → Environment Variables):
-```
-DEEPSEEK_API_KEY = your-deepseek-key
-SUPABASE_ANON_KEY = your-supabase-anon-key
+3. Download fonts (Instrument Serif):
+Place `InstrumentSerif-Regular.ttf` and `InstrumentSerif-Italic.ttf` in `/public/fonts/`
+
+4. Run development server:
+```bash
+npm run dev
 ```
 
-### 5. Redeploy
+5. Open http://localhost:3000
+
+## Pages
+
+- `/` - Landing page
+- `/studio` - Theme editor
+- `/preview` - Live preview with scroll animations
+- `/admin` - Analytics dashboard
+
+## Supabase Setup
+
+Run the SQL from the old project to create the `themes` table and `media` storage bucket.
+
+## Deploy to Vercel
+
 ```bash
 vercel --prod
 ```
 
-## Project Structure
-
-```
-pebble-vercel/
-├── api/
-│   ├── generate-colors.js   # DeepSeek color generation
-│   ├── generate-content.js  # DeepSeek content generation
-│   └── themes/
-│       ├── save.js          # Save theme to Supabase
-│       ├── [id].js          # Load theme by ID
-│       ├── gallery.js       # List public themes
-│       └── like.js          # Like a theme
-├── public/
-│   ├── index.html           # Studio dashboard
-│   ├── pebble-dynamic.html  # Preview site
-│   └── theme.html           # Shareable theme loader
-├── supabase-schema.sql      # Database schema
-├── vercel.json
-└── package.json
-```
-
-## How It Works
-
-1. **Studio Dashboard** (`/`) - Customize videos and colors
-2. **Color Generation** - Type a description, AI generates matching colors
-3. **Preview Site** (`/pebble-dynamic.html`) - See your changes live
-
-## API Endpoints
-
-### POST /api/generate-colors
-Generates a color palette from a description.
-
-Request:
-```json
-{
-    "prompt": "warm sunset with orange and purple"
-}
-```
-
-Response:
-```json
-{
-    "colors": {
-        "accentOrange": "#f97316",
-        "accentSage": "#fb923c",
-        "accentSlate": "#9333ea",
-        "bgCream": "#fef3c7",
-        "bgDark": "#1e1b4b",
-        "accentTaupe": "#c2410c"
-    }
-}
-```
-
-### POST /api/generate-content
-Generates all website text content from a brand description.
-
-Request:
-```json
-{
-    "prompt": "A luxury electric camper van company"
-}
-```
-
-Response:
-```json
-{
-    "content": {
-        "hero": {
-            "tagline": "Adventure Reimagined",
-            "headline": "Electric Freedom",
-            "subheadline": "Explore the world in silent luxury"
-        },
-        "slides": [...],
-        "footer": {
-            "tagline": "Your Journey Awaits",
-            "cta": "Reserve Now"
-        }
-    }
-}
-```
-
-## Local Development
-
-```bash
-# Create .env.local with your API key
-cp .env.example .env.local
-
-# Run locally
-vercel dev
-```
-
-Then open http://localhost:3000
-
-## Features
-
-- 🎬 **Video Search** - Search Pexels for background videos
-- 🖼️ **Image Upload** - Upload your own images or search Pexels
-- 🎨 **AI Colors** - Describe colors naturally, AI generates palette
-- ✏️ **Content Editor** - Edit all text: hero, slides, footer
-- 🤖 **AI Content** - Generate all website copy from a brand description
-- ⚡ **Quick Themes** - One-click theme application
-- 💾 **Auto-save** - Changes persist in localStorage
+Add environment variables in Vercel dashboard:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GROQ_API_KEY`
