@@ -423,7 +423,6 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 0.75rem;
-            cursor: pointer;
             transition: all 0.2s;
         }
         
@@ -433,16 +432,55 @@
             display: flex;
             gap: 4px;
             margin-bottom: 0.5rem;
+            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
         }
         
         .theme-color {
             flex: 1;
             height: 40px;
-            border-radius: 4px;
+        }
+        
+        .theme-info {
+            margin-bottom: 0.5rem;
         }
         
         .theme-name { font-weight: 500; font-size: 0.85rem; margin-bottom: 0.25rem; }
         .theme-author { font-size: 0.75rem; color: var(--text-muted); }
+        
+        .theme-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        .like-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        
+        .like-btn:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+        
+        .like-btn.liked {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+            color: #ef4444;
+        }
     </style>
 </head>
 <body>
@@ -574,6 +612,11 @@
                 <div class="card">
                     <div class="card-header">
                         <span class="card-title">🌐 Community Themes</span>
+                    </div>
+                    <div class="tabs" style="margin-bottom: 1rem;">
+                        <button class="tab active" onclick="switchGalleryTab('browse')">Browse All</button>
+                        <button class="tab" onclick="switchGalleryTab('favorites')">❤️ My Favorites</button>
+                        <button class="tab" onclick="switchGalleryTab('popular')">🔥 Popular</button>
                     </div>
                     <div class="theme-grid" id="galleryGrid"></div>
                 </div>
@@ -1035,17 +1078,86 @@
         }
         
         // Gallery
+        let galleryTab = 'browse';
+        let favorites = JSON.parse(localStorage.getItem('pebbleFavorites') || '[]');
+        
+        function switchGalleryTab(tab) {
+            galleryTab = tab;
+            document.querySelectorAll('#panel-gallery .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            loadGallery();
+        }
+        
         async function loadGallery() {
-            const data = await supabaseGet('themes?is_public=eq.true&order=created_at.desc&limit=20');
-            document.getElementById('galleryGrid').innerHTML = (data || []).map(t => `
-                <div class="theme-card" onclick="loadTheme('${t.id}')">
-                    <div class="theme-preview">
+            let data = [];
+            
+            if (galleryTab === 'favorites') {
+                // Load favorites from local storage IDs
+                if (favorites.length > 0) {
+                    const ids = favorites.map(id => `"${id}"`).join(',');
+                    data = await supabaseGet(`themes?id=in.(${ids})`);
+                }
+            } else if (galleryTab === 'popular') {
+                data = await supabaseGet('themes?is_public=eq.true&order=likes.desc&limit=20');
+            } else {
+                data = await supabaseGet('themes?is_public=eq.true&order=created_at.desc&limit=20');
+            }
+            
+            if (!data || data.length === 0) {
+                document.getElementById('galleryGrid').innerHTML = `
+                    <p style="color:var(--text-muted); grid-column: 1/-1; text-align: center; padding: 2rem;">
+                        ${galleryTab === 'favorites' ? 'No favorites yet. Like some themes!' : 'No themes yet'}
+                    </p>`;
+                return;
+            }
+            
+            document.getElementById('galleryGrid').innerHTML = data.map(t => {
+                const isFav = favorites.includes(t.id);
+                return `
+                <div class="theme-card">
+                    <div class="theme-preview" onclick="loadTheme('${t.id}')">
                         ${Object.values(t.colors || {}).slice(0, 5).map(c => `<div class="theme-color" style="background:${c}"></div>`).join('')}
                     </div>
-                    <div class="theme-name">${t.name}</div>
-                    <div class="theme-author">by ${t.author || 'Anonymous'}</div>
+                    <div class="theme-info">
+                        <div class="theme-name">${t.name}</div>
+                        <div class="theme-author">by ${t.author || 'Anonymous'}</div>
+                    </div>
+                    <div class="theme-actions">
+                        <button class="like-btn ${isFav ? 'liked' : ''}" onclick="toggleLike('${t.id}', event)">
+                            ${isFav ? '❤️' : '🤍'} <span>${t.likes || 0}</span>
+                        </button>
+                        <button class="btn btn-small" onclick="loadTheme('${t.id}')">Use</button>
+                    </div>
                 </div>
-            `).join('') || '<p style="color:var(--text-muted)">No themes yet</p>';
+            `}).join('');
+        }
+        
+        async function toggleLike(themeId, e) {
+            e.stopPropagation();
+            const idx = favorites.indexOf(themeId);
+            
+            if (idx === -1) {
+                // Add to favorites
+                favorites.push(themeId);
+                // Increment likes in Supabase
+                await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_likes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+                    },
+                    body: JSON.stringify({ theme_id: themeId })
+                });
+                toast('Added to favorites! ❤️');
+            } else {
+                // Remove from favorites
+                favorites.splice(idx, 1);
+                toast('Removed from favorites');
+            }
+            
+            localStorage.setItem('pebbleFavorites', JSON.stringify(favorites));
+            loadGallery();
         }
         
         async function loadTheme(id) {
